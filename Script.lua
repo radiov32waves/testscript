@@ -461,27 +461,27 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar: ImageLabel IS the circle element.
-    -- UICorner on an ImageLabel with a non-transparent background clips
-    -- the image content to a circle — this is the only reliable method.
-    -- UIStroke with ApplyStrokeMode.Border draws inward so it's never
-    -- clipped by ancestor ClipsDescendants frames.
-    local pcAv=new("ImageLabel",{
-        Size=UDim2.new(0,30,0,30),
-        Position=UDim2.new(0,0,0.5,-15),
-        BackgroundColor3=T.Glass,
-        BackgroundTransparency=0,
-        Image="https://www.roblox.com/headshot-thumbnail/image?userId="
-            ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
-        ScaleType=Enum.ScaleType.Crop,
-        BorderSizePixel=0,
-        ZIndex=2,
-    },pcRow)
-    corner(pcAv,T.RFull)
-    local avStroke=Instance.new("UIStroke",pcAv)
-    avStroke.Color=isPremium and T.PremBorder or T.BorderElem
-    avStroke.Thickness=isPremium and 1.8 or 1.2
-    avStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+    -- ── Avatar circle
+    -- Use rbxthumb URI (works in all executors) on an ImageLabel that is
+    -- the circle itself. UICorner on an ImageLabel with BackgroundTransparency=0
+    -- clips the rendered image to the rounded shape. UIStroke Border mode
+    -- draws inward so it cannot be clipped by ancestor ClipsDescendants.
+    local pcAv = Instance.new("ImageLabel")
+    pcAv.Size                = UDim2.new(0,32,0,32)
+    pcAv.Position            = UDim2.new(0,0,0.5,-16)
+    pcAv.BackgroundColor3    = T.Glass
+    pcAv.BackgroundTransparency = 0
+    pcAv.Image               = "rbxthumb://type=AvatarHeadShot&id="..tostring(LocalPlayer.UserId).."&w=48&h=48"
+    pcAv.ScaleType           = Enum.ScaleType.Crop
+    pcAv.BorderSizePixel     = 0
+    pcAv.ZIndex              = 2
+    pcAv.Parent              = pcRow
+    local _avC = Instance.new("UICorner", pcAv)
+    _avC.CornerRadius        = UDim.new(1,0)
+    local _avS = Instance.new("UIStroke", pcAv)
+    _avS.Color               = isPremium and T.PremBorder or T.BorderElem
+    _avS.Thickness           = isPremium and 1.8 or 1.2
+    _avS.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
 
     -- Crown on pcRow (outside pcAv) so it never gets clipped
     if isPremium then
