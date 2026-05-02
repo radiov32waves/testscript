@@ -1247,37 +1247,497 @@ function Nova:MakeWindow(opts)
         -- ── TEXTBOX ─────────────────────────────
         function Tab:AddTextbox(opts)
             opts = opts or {}
-            local name    = opts.Name          or "Textbox"
-            local default = opts.Default       or ""
-            local vanish  = opts.TextDisappear or false
-            local cb      = opts.Callback      or function() end
+            local name        = opts.Name          or "Input"
+            local default     = opts.Default       or ""
+            local placeholder = opts.Placeholder   or "Type here..."
+            local vanish      = opts.TextDisappear or false
+            local maxChars    = opts.MaxChars      or 100
+            local numbersOnly = opts.NumbersOnly   or false
+            local cb          = opts.Callback      or function() end
 
-            local f = baseElem(38)
-            leftLbl(f, name, .36)
+            -- Outer wrapper: auto-height to hold label + input row
+            local wrapper = new("Frame",{
+                Size=UDim2.new(1,0,0,0),
+                AutomaticSize=Enum.AutomaticSize.Y,
+                BackgroundTransparency=1,
+                BorderSizePixel=0,
+            }, target())
 
+            local ll = Instance.new("UIListLayout", wrapper)
+            ll.FillDirection  = Enum.FillDirection.Vertical
+            ll.Padding        = UDim.new(0,4)
+            ll.SortOrder      = Enum.SortOrder.LayoutOrder
+
+            -- ── Label row ─────────────────────────────
+            local labelRow = new("Frame",{
+                Size=UDim2.new(1,0,0,16),
+                BackgroundTransparency=1, BorderSizePixel=0,
+                LayoutOrder=1,
+            }, wrapper)
+
+            new("TextLabel",{
+                Size=UDim2.new(0.7,0,1,0),
+                BackgroundTransparency=1,
+                Text=name,
+                TextColor3=Color3.fromRGB(180,168,220),
+                TextSize=11, Font=T.FontBold,
+                TextXAlignment=Enum.TextXAlignment.Left,
+            }, labelRow)
+
+            -- character counter (right side of label row)
+            local counter = new("TextLabel",{
+                Size=UDim2.new(0.3,0,1,0),
+                Position=UDim2.new(0.7,0,0,0),
+                BackgroundTransparency=1,
+                Text="0 / "..maxChars,
+                TextColor3=Color3.fromRGB(60,52,90),
+                TextSize=10, Font=T.FontLight,
+                TextXAlignment=Enum.TextXAlignment.Right,
+            }, labelRow)
+
+            -- ── Input box container ───────────────────
+            local inputContainer = new("Frame",{
+                Size=UDim2.new(1,0,0,38),
+                BackgroundColor3=Color3.fromRGB(14,12,24),
+                BorderSizePixel=0, LayoutOrder=2,
+                ClipsDescendants=true,
+            }, wrapper)
+            corner(inputContainer, UDim.new(0,8))
+
+            -- animated focus stroke
+            local inputStroke = Instance.new("UIStroke", inputContainer)
+            inputStroke.Color     = Color3.fromRGB(32,26,58)
+            inputStroke.Thickness = 1.5
+            inputStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+            -- left accent bar (appears on focus)
+            local accentBar = new("Frame",{
+                Size=UDim2.new(0,2,0.55,0),
+                Position=UDim2.new(0,0,0.225,0),
+                BackgroundColor3=T.Accent,
+                BorderSizePixel=0,
+                BackgroundTransparency=1,
+            }, inputContainer)
+            corner(accentBar, T.RadFull)
+
+            -- search/edit icon on the left
+            local iconLbl = new("TextLabel",{
+                Size=UDim2.new(0,28,1,0),
+                Position=UDim2.new(0,4,0,0),
+                BackgroundTransparency=1,
+                Text="✎",
+                TextColor3=Color3.fromRGB(60,50,95),
+                TextSize=14, Font=T.FontBold,
+            }, inputContainer)
+
+            -- the actual TextBox
             local box = new("TextBox",{
-                Size=UDim2.new(.6,0,0,26),
-                Position=UDim2.new(.38,0,0.5,-13),
-                BackgroundColor3=T.BG3, Text=default,
-                PlaceholderText="Enter value...",
-                PlaceholderColor3=T.TextMuted,
-                TextColor3=T.Text, TextSize=11,
-                Font=T.FontLight, BorderSizePixel=0,
+                Size=UDim2.new(1,-66,1,0),
+                Position=UDim2.new(0,32,0,0),
+                BackgroundTransparency=1,
+                Text=default,
+                PlaceholderText=placeholder,
+                PlaceholderColor3=Color3.fromRGB(55,46,85),
+                TextColor3=Color3.fromRGB(220,215,245),
+                TextSize=12, Font=T.FontLight,
+                BorderSizePixel=0,
                 ClearTextOnFocus=false,
-            }, f)
-            corner(box, T.RadBtn)
-            local bstroke = stroke(box, T.Stroke, 1)
+                TextXAlignment=Enum.TextXAlignment.Left,
+                TextTruncate=Enum.TextTruncate.AtEnd,
+            }, inputContainer)
 
-            box.Focused:Connect(function()    bstroke.Color=T.Accent end)
-            box.FocusLost:Connect(function()  bstroke.Color=T.Stroke end)
-            box.FocusLost:Connect(function(enter)
-                pcall(cb, box.Text, enter)
-                if vanish then box.Text="" end
+            -- clear (✕) button on the right
+            local clearBtn = new("TextButton",{
+                Size=UDim2.new(0,26,0,26),
+                Position=UDim2.new(1,-32,0.5,-13),
+                BackgroundColor3=Color3.fromRGB(30,24,52),
+                Text="✕",
+                TextColor3=Color3.fromRGB(80,66,120),
+                TextSize=10, Font=T.FontBold,
+                BorderSizePixel=0,
+                BackgroundTransparency=1,
+            }, inputContainer)
+            corner(clearBtn, T.RadFull)
+
+            clearBtn.MouseButton1Click:Connect(function()
+                box.Text=""
+                counter.Text="0 / "..maxChars
+                counter.TextColor3=Color3.fromRGB(60,52,90)
+                pcall(cb,"",false)
             end)
 
+            -- ── Focus / blur animations ───────────────
+            box.Focused:Connect(function()
+                tw(inputStroke,{Color=T.Accent, Thickness=1.5})
+                tw(inputContainer,{BackgroundColor3=Color3.fromRGB(18,15,32)})
+                tw(accentBar,{BackgroundTransparency=0})
+                tw(iconLbl,{TextColor3=T.AccentSoft})
+                tw(clearBtn,{BackgroundTransparency=0, TextColor3=Color3.fromRGB(130,110,180)})
+            end)
+
+            box.FocusLost:Connect(function(enter)
+                tw(inputStroke,{Color=Color3.fromRGB(32,26,58), Thickness=1.5})
+                tw(inputContainer,{BackgroundColor3=Color3.fromRGB(14,12,24)})
+                tw(accentBar,{BackgroundTransparency=1})
+                tw(iconLbl,{TextColor3=Color3.fromRGB(60,50,95)})
+                tw(clearBtn,{BackgroundTransparency=1, TextColor3=Color3.fromRGB(80,66,120)})
+
+                local txt = box.Text
+                -- Numbers-only enforcement
+                if numbersOnly then
+                    local n = tonumber(txt)
+                    if not n then txt=""; box.Text="" end
+                end
+                -- Max chars enforcement
+                if #txt > maxChars then
+                    txt = txt:sub(1, maxChars)
+                    box.Text = txt
+                end
+                pcall(cb, txt, enter)
+                if vanish then
+                    box.Text=""
+                    counter.Text="0 / "..maxChars
+                    counter.TextColor3=Color3.fromRGB(60,52,90)
+                end
+            end)
+
+            -- Live char counter while typing
+            box:GetPropertyChangedSignal("Text"):Connect(function()
+                local txt = box.Text
+                -- numbers only: strip non-numeric chars live
+                if numbersOnly then
+                    local clean = txt:gsub("[^%d%.-]","")
+                    if clean ~= txt then box.Text=clean; return end
+                end
+                -- enforce max length live
+                if #txt > maxChars then
+                    box.Text = txt:sub(1,maxChars)
+                    return
+                end
+                local len = #txt
+                counter.Text = len.." / "..maxChars
+                -- counter turns accent color when getting full
+                if len >= maxChars then
+                    counter.TextColor3 = T.Danger
+                elseif len >= math.floor(maxChars*0.8) then
+                    counter.TextColor3 = T.Warning
+                else
+                    counter.TextColor3 = Color3.fromRGB(60,52,90)
+                end
+            end)
+
+            -- set initial counter
+            counter.Text = #default.." / "..maxChars
+
             local obj={}
-            function obj:Set(v) box.Text=v end
+            function obj:Set(v)
+                box.Text = tostring(v)
+                counter.Text = #tostring(v).." / "..maxChars
+            end
             function obj:Get() return box.Text end
+            function obj:Clear()
+                box.Text=""
+                counter.Text="0 / "..maxChars
+            end
+            return obj
+        end
+
+        -- ════════════════════════════════════════
+        --  ADD KEY SYSTEM
+        -- ════════════════════════════════════════
+        function Tab:AddKeySystem(opts)
+            opts = opts or {}
+            local title       = opts.Title       or "Key System"
+            local description = opts.Description or "Enter your key to access the script."
+            local keys        = opts.Keys        or {}       -- list of valid key strings
+            local placeholder = opts.Placeholder or "Enter key here..."
+            local getKeyUrl   = opts.GetKeyUrl   or nil      -- optional link label
+            local onSuccess   = opts.onSuccess   or function() end
+            local onFail      = opts.onFail      or function() end
+
+            -- ── Outer card ──────────────────────────
+            local card = new("Frame",{
+                Size=UDim2.new(1,0,0,0),
+                AutomaticSize=Enum.AutomaticSize.Y,
+                BackgroundColor3=Color3.fromRGB(14,12,26),
+                BorderSizePixel=0,
+            }, target())
+            corner(card, UDim.new(0,10))
+            local cardStroke = Instance.new("UIStroke", card)
+            cardStroke.Color     = Color3.fromRGB(35,28,68)
+            cardStroke.Thickness = 1
+
+            local innerPad = Instance.new("UIPadding", card)
+            innerPad.PaddingTop    = UDim.new(0,16)
+            innerPad.PaddingBottom = UDim.new(0,16)
+            innerPad.PaddingLeft   = UDim.new(0,14)
+            innerPad.PaddingRight  = UDim.new(0,14)
+
+            local innerList = Instance.new("UIListLayout", card)
+            innerList.FillDirection = Enum.FillDirection.Vertical
+            innerList.Padding       = UDim.new(0,10)
+            innerList.SortOrder     = Enum.SortOrder.LayoutOrder
+
+            -- ── Lock icon + title row ───────────────
+            local titleRow = new("Frame",{
+                Size=UDim2.new(1,0,0,28),
+                BackgroundTransparency=1, LayoutOrder=1,
+            }, card)
+
+            -- lock icon circle
+            local iconCircle = new("Frame",{
+                Size=UDim2.new(0,28,0,28),
+                BackgroundColor3=Color3.fromRGB(50,30,120),
+                BorderSizePixel=0,
+            }, titleRow)
+            corner(iconCircle, T.RadFull)
+            local iconGrad = Instance.new("UIGradient", iconCircle)
+            iconGrad.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(90,50,210)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(50,28,130)),
+            }
+            iconGrad.Rotation = 135
+            new("TextLabel",{
+                Size=UDim2.new(1,0,1,0),
+                BackgroundTransparency=1,
+                Text="🔑", TextSize=13,
+                Font=T.FontBold,
+                TextXAlignment=Enum.TextXAlignment.Center,
+            }, iconCircle)
+
+            new("TextLabel",{
+                Size=UDim2.new(1,-38,1,0), Position=UDim2.new(0,36,0,0),
+                BackgroundTransparency=1,
+                Text=title,
+                TextColor3=Color3.fromRGB(225,218,250),
+                TextSize=13, Font=T.FontBold,
+                TextXAlignment=Enum.TextXAlignment.Left,
+            }, titleRow)
+
+            -- ── Description ─────────────────────────
+            local desc = new("TextLabel",{
+                Size=UDim2.new(1,0,0,0),
+                AutomaticSize=Enum.AutomaticSize.Y,
+                BackgroundTransparency=1,
+                Text=description,
+                TextColor3=Color3.fromRGB(100,88,140),
+                TextSize=11, Font=T.FontLight,
+                TextXAlignment=Enum.TextXAlignment.Left,
+                TextWrapped=true, LayoutOrder=2,
+            }, card)
+
+            -- ── Input field ─────────────────────────
+            local inputFrame = new("Frame",{
+                Size=UDim2.new(1,0,0,40),
+                BackgroundColor3=Color3.fromRGB(10,8,20),
+                BorderSizePixel=0, LayoutOrder=3,
+                ClipsDescendants=true,
+            }, card)
+            corner(inputFrame, UDim.new(0,8))
+            local inputStroke = Instance.new("UIStroke", inputFrame)
+            inputStroke.Color     = Color3.fromRGB(32,26,58)
+            inputStroke.Thickness = 1.5
+
+            -- left key icon
+            new("TextLabel",{
+                Size=UDim2.new(0,32,1,0),
+                BackgroundTransparency=1,
+                Text="⌨", TextSize=13,
+                TextColor3=Color3.fromRGB(55,44,90),
+                Font=T.FontBold,
+                TextXAlignment=Enum.TextXAlignment.Center,
+            }, inputFrame)
+
+            local keyInput = new("TextBox",{
+                Size=UDim2.new(1,-36,1,0),
+                Position=UDim2.new(0,32,0,0),
+                BackgroundTransparency=1,
+                Text="",
+                PlaceholderText=placeholder,
+                PlaceholderColor3=Color3.fromRGB(50,42,80),
+                TextColor3=Color3.fromRGB(215,208,245),
+                TextSize=12, Font=T.Font,
+                BorderSizePixel=0,
+                ClearTextOnFocus=false,
+                TextXAlignment=Enum.TextXAlignment.Left,
+            }, inputFrame)
+
+            -- focus animations
+            keyInput.Focused:Connect(function()
+                tw(inputStroke,{Color=T.Accent, Thickness=1.5})
+                tw(inputFrame,{BackgroundColor3=Color3.fromRGB(14,11,28)})
+                tw(cardStroke,{Color=Color3.fromRGB(55,38,110)})
+            end)
+            keyInput.FocusLost:Connect(function()
+                tw(inputStroke,{Color=Color3.fromRGB(32,26,58)})
+                tw(inputFrame,{BackgroundColor3=Color3.fromRGB(10,8,20)})
+                tw(cardStroke,{Color=Color3.fromRGB(35,28,68)})
+            end)
+
+            -- ── Status label (hidden until attempt) ─
+            local statusLbl = new("TextLabel",{
+                Size=UDim2.new(1,0,0,14),
+                BackgroundTransparency=1,
+                Text="", TextSize=10, Font=T.FontBold,
+                TextXAlignment=Enum.TextXAlignment.Left,
+                LayoutOrder=4, Visible=false,
+            }, card)
+
+            -- ── Verify button ────────────────────────
+            local verifyBtn = new("TextButton",{
+                Size=UDim2.new(1,0,0,38),
+                BackgroundColor3=Color3.fromRGB(55,30,140),
+                Text="", BorderSizePixel=0, LayoutOrder=5,
+            }, card)
+            corner(verifyBtn, UDim.new(0,8))
+            -- gradient
+            local vGrad = Instance.new("UIGradient", verifyBtn)
+            vGrad.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(90,50,210)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(55,28,150)),
+            }
+            vGrad.Rotation = 90
+
+            -- button inner layout
+            local btnInner = new("Frame",{
+                Size=UDim2.new(1,0,1,0),
+                BackgroundTransparency=1,
+            }, verifyBtn)
+            local btnIcon = new("TextLabel",{
+                Size=UDim2.new(0,30,1,0),
+                BackgroundTransparency=1,
+                Text="🔓", TextSize=13,
+                Font=T.FontBold,
+            }, btnInner)
+            local btnLbl = new("TextLabel",{
+                Size=UDim2.new(1,-30,1,0),
+                Position=UDim2.new(0,30,0,0),
+                BackgroundTransparency=1,
+                Text="Verify Key",
+                TextColor3=Color3.fromRGB(220,210,255),
+                TextSize=13, Font=T.FontBold,
+                TextXAlignment=Enum.TextXAlignment.Center,
+            }, btnInner)
+
+            -- hover
+            verifyBtn.MouseEnter:Connect(function()
+                tw(verifyBtn,{BackgroundColor3=Color3.fromRGB(70,40,175)})
+            end)
+            verifyBtn.MouseLeave:Connect(function()
+                tw(verifyBtn,{BackgroundColor3=Color3.fromRGB(55,30,140)})
+            end)
+
+            -- ── Get Key link (optional) ──────────────
+            if getKeyUrl then
+                local linkRow = new("Frame",{
+                    Size=UDim2.new(1,0,0,14),
+                    BackgroundTransparency=1, LayoutOrder=6,
+                }, card)
+                new("TextLabel",{
+                    Size=UDim2.new(1,0,1,0),
+                    BackgroundTransparency=1,
+                    Text="🔗  Don't have a key?  "..getKeyUrl,
+                    TextColor3=Color3.fromRGB(90,76,140),
+                    TextSize=10, Font=T.FontLight,
+                    TextXAlignment=Enum.TextXAlignment.Center,
+                    TextWrapped=true,
+                }, linkRow)
+            end
+
+            -- ── Verify logic ─────────────────────────
+            local verified = false
+            local attempts = 0
+            local MAX_ATTEMPTS = 5
+
+            local function showStatus(success, msg)
+                statusLbl.Visible = true
+                statusLbl.Text    = (success and "✔  " or "✘  ")..msg
+                statusLbl.TextColor3 = success
+                    and Color3.fromRGB(80,220,140)
+                    or  Color3.fromRGB(230,70,70)
+            end
+
+            local function doVerify()
+                if verified then return end
+                if attempts >= MAX_ATTEMPTS then
+                    showStatus(false, "Too many attempts. Restart the script.")
+                    verifyBtn.Active = false
+                    btnLbl.Text = "Locked Out"
+                    return
+                end
+
+                local entered = keyInput.Text:gsub("%s","") -- trim spaces
+                if entered == "" then
+                    showStatus(false, "Please enter a key.")
+                    tw(inputStroke,{Color=T.Danger})
+                    task.delay(.6,function() tw(inputStroke,{Color=Color3.fromRGB(32,26,58)}) end)
+                    return
+                end
+
+                attempts = attempts + 1
+
+                -- loading state
+                btnLbl.Text = "Verifying..."
+                btnIcon.Text = "⏳"
+                tw(verifyBtn,{BackgroundColor3=Color3.fromRGB(35,22,80)})
+
+                task.delay(0.6, function()
+                    local valid = false
+                    for _, k in ipairs(keys) do
+                        if entered == tostring(k) then valid = true; break end
+                    end
+
+                    if valid then
+                        verified = true
+                        -- success state
+                        tw(verifyBtn,{BackgroundColor3=Color3.fromRGB(30,110,70)})
+                        tw(inputStroke,{Color=Color3.fromRGB(70,220,140)})
+                        tw(cardStroke,{Color=Color3.fromRGB(60,180,110)})
+                        btnLbl.Text  = "Access Granted"
+                        btnIcon.Text = "✔"
+                        showStatus(true, "Key accepted! Welcome.")
+                        verifyBtn.Active = false
+                        keyInput.TextEditable = false
+
+                        Nova:MakeNotification({
+                            Name    = "Key System",
+                            Content = "Key verified! Access granted.",
+                            Time    = 4,
+                        })
+                        pcall(onSuccess, entered)
+                    else
+                        -- fail state
+                        tw(verifyBtn,{BackgroundColor3=Color3.fromRGB(55,30,140)})
+                        tw(inputStroke,{Color=T.Danger})
+                        btnLbl.Text  = "Verify Key"
+                        btnIcon.Text = "🔓"
+                        showStatus(false,
+                            "Invalid key. ("..attempts.."/"..MAX_ATTEMPTS.." attempts)")
+                        task.delay(1, function()
+                            tw(inputStroke,{Color=Color3.fromRGB(32,26,58)})
+                        end)
+
+                        -- shake animation on input
+                        local ox = inputFrame.Position.X.Offset
+                        for i=1,3 do
+                            task.wait(0.04)
+                            inputFrame.Position = UDim2.new(0, ox+(i%2==0 and 4 or -4), inputFrame.Position.Y.Scale, inputFrame.Position.Y.Offset)
+                        end
+                        inputFrame.Position = UDim2.new(0, ox, inputFrame.Position.Y.Scale, inputFrame.Position.Y.Offset)
+
+                        pcall(onFail, entered)
+                    end
+                end)
+            end
+
+            verifyBtn.MouseButton1Click:Connect(doVerify)
+            keyInput.FocusLost:Connect(function(enter)
+                if enter then doVerify() end
+            end)
+
+            local obj = {}
+            function obj:IsVerified() return verified end
+            function obj:SetKeys(t) keys = t end
             return obj
         end
 
