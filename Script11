@@ -466,9 +466,15 @@ function Nova:MakeWindow(opts)
     -- ── SIDEBAR  (Workly-style) ─────────────────────────────────────
     local CARD_H = 86   -- player card height at bottom of sidebar
 
-    local tabBar = new("Frame",{
+    local tabBar = new("ScrollingFrame",{
         Size=UDim2.new(0,TAB_W,1,-(TOP_H+CARD_H)), Position=UDim2.new(0,0,0,TOP_H),
         BackgroundColor3=Color3.fromRGB(13,11,22), BorderSizePixel=0,
+        ScrollBarThickness=2,
+        ScrollBarImageColor3=T.Accent,
+        CanvasSize=UDim2.new(0,0,0,0),
+        AutomaticCanvasSize=Enum.AutomaticSize.Y,
+        ScrollingDirection=Enum.ScrollingDirection.Y,
+        ElasticBehavior=Enum.ElasticBehavior.Never,
     }, win)
     listLayout(tabBar, Enum.FillDirection.Vertical, 1)
     pad(tabBar,10,4,8,8)
