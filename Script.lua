@@ -364,9 +364,9 @@ function Nova:MakeWindow(opts)
         end)
     end
 
-    -- Minimize button: rightmost slot, lifted ~38px above topbar centre (~1 cm)
-    -- Border stored directly from ctrlBtn return so it's always the right UIStroke
-    local minBtn,minBs=ctrlBtn("─",-10,-52,T.GlassHov,function()
+    -- ── FIX 1: Minimize button — moved down (-8 yOff) and left (-52 xOff)
+    -- Previously: xOff=-44, yOff=-14. Now: xOff=-52, yOff=-8
+    local minBtn,minBs=ctrlBtn("─",-52,-8,T.GlassHov,function()
         minimized=true; fullSz=win.Size
         tw(win,{Size=UDim2.new(0.82,0,0,0)},.2,Enum.EasingStyle.Quad)
         tw(shadow,{Size=UDim2.new(0.82,60,0,60)},.2,Enum.EasingStyle.Quad)
@@ -456,24 +456,48 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- FIX: ClipsDescendants=true so the avatar image is masked by the circle
-    local pcAv=new("Frame",{Size=UDim2.new(0,30,0,30),
-        Position=UDim2.new(0,0,0.5,-15),
-        BackgroundColor3=T.Glass,BorderSizePixel=0,ZIndex=2,
-        ClipsDescendants=true},pcRow)
-    corner(pcAv,T.RFull)
-    local avStroke=glassBorder(pcAv,
+    -- ── FIX 2: Avatar circle border
+    -- Root cause: win has ClipsDescendants=true. The UIStroke on pcAvWrap renders
+    -- OUTSIDE the frame bounds, so it gets clipped by any ancestor with
+    -- ClipsDescendants. Solution: increase pcAvWrap size by the stroke thickness
+    -- so the stroke pixel row sits inside the ancestor clip bounds, and set
+    -- ClipsDescendants=false on pcAvWrap so its own children can overflow.
+    -- We also move pcAv inward by 2px on each side so the avatar image stays
+    -- the same visual size while the stroke renders cleanly.
+    local STROKE_W = isPremium and 1.8 or 1.2
+    local PAD      = math.ceil(STROKE_W) + 1  -- 3px safety margin
+
+    -- Wrapper is larger by PAD on each side so the stroke isn't clipped
+    local pcAvWrap=new("Frame",{
+        Size=UDim2.new(0, 30 + PAD*2, 0, 30 + PAD*2),
+        Position=UDim2.new(0, -PAD, 0.5, -(15 + PAD)),
+        BackgroundTransparency=1,
+        BorderSizePixel=0,
+        ZIndex=2,
+        ClipsDescendants=false,   -- stroke must NOT be clipped here
+    },pcRow)
+    corner(pcAvWrap, T.RFull)
+    glassBorder(pcAvWrap,
         isPremium and T.PremBorder or T.BorderElem,
-        isPremium and 1.8 or 1.2)
+        STROKE_W)
+
+    -- Inner image frame: sits PAD px inset so the visible avatar is still 30×30
+    local pcAv=new("Frame",{
+        Size=UDim2.new(0, 30, 0, 30),
+        Position=UDim2.new(0, PAD, 0, PAD),
+        BackgroundColor3=T.Glass,
+        BorderSizePixel=0,
+        ZIndex=2,
+        ClipsDescendants=true,
+    },pcAvWrap)
+    corner(pcAv,T.RFull)
 
     new("ImageLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,
         Image="https://www.roblox.com/headshot-thumbnail/image?userId="
             ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
         ZIndex=3},pcAv)
-    corner(new("Frame",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1},pcAv),T.RFull)
 
-    -- FIX: crown lives on pcRow (outside pcAv) so it overflows the avatar correctly
-    -- without being clipped by ClipsDescendants on pcAv
+    -- Crown on pcRow (outside pcAv) so it never gets clipped
     if isPremium then
         new("TextLabel",{Size=UDim2.new(0,14,0,14),
             Position=UDim2.new(0,26,0,-4),
@@ -815,7 +839,7 @@ function Nova:MakeWindow(opts)
                 Position=UDim2.new(1,-54,0.5,-12),
                 BackgroundColor3=val and T.Accent or T.ToggleOff,
                 BorderSizePixel=0,
-                ClipsDescendants=true},f)  -- FIX: clip knob at track edges
+                ClipsDescendants=true},f)
             corner(track,T.RFull)
             local tbs=glassBorder(track,val and T.BorderFocus or T.BorderElem,1.2)
             shimmerLine(track,val and 0.45 or 0.8)
@@ -877,7 +901,7 @@ function Nova:MakeWindow(opts)
             local track=new("Frame",{Size=UDim2.new(1,-22,0,5),
                 Position=UDim2.new(0,11,0,38),
                 BackgroundColor3=T.ToggleOff,BorderSizePixel=0,
-                ClipsDescendants=true},f)  -- FIX: clip fill/handle at track edges
+                ClipsDescendants=true},f)
             corner(track,T.RFull)
             glassBorder(track,T.BorderElem,1)
 
@@ -1086,7 +1110,7 @@ function Nova:MakeWindow(opts)
                 local trk=new("Frame",{Size=UDim2.new(1,-46,0,4),
                     Position=UDim2.new(0,18,0.5,-2),
                     BackgroundColor3=T.ToggleOff,BorderSizePixel=0,
-                    ClipsDescendants=true},row)  -- FIX: clip fill at track edges
+                    ClipsDescendants=true},row)
                 corner(trk,T.RFull)
                 glassBorder(trk,T.BorderElem,1)
                 local fl=new("Frame",{Size=UDim2.new(init/255,0,1,0),
@@ -1373,7 +1397,7 @@ function Nova:MakeWindow(opts)
             local titleRow=new("Frame",{Size=UDim2.new(1,0,0,28),BackgroundTransparency=1},card)
             local ic=new("Frame",{Size=UDim2.new(0,28,0,28),
                 BackgroundColor3=T.AccentDark,BorderSizePixel=0,
-                ClipsDescendants=true},titleRow)  -- FIX: clip icon image to circle
+                ClipsDescendants=true},titleRow)
             corner(ic,T.RFull)
             grad(ic,Color3.fromRGB(90,48,215),Color3.fromRGB(48,26,130),135)
             glassBorder(ic,T.BorderBtn,1)
