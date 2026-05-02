@@ -432,8 +432,10 @@ function Nova:MakeWindow(opts)
     vlist(tabBar,2)
     pad(tabBar,10,4,8,8)
 
+    -- ── FIX: divider shortened by 10px so it doesn't overwrite the bottom-left corner ──
     local sdiv=new("Frame",{
-        Size=UDim2.new(0,1,1,-TOP_H),Position=UDim2.new(0,TAB_W,0,TOP_H),
+        Size=UDim2.new(0,1,1,-(TOP_H+10)),
+        Position=UDim2.new(0,TAB_W,0,TOP_H),
         BackgroundColor3=Color3.fromRGB(40,30,76),BorderSizePixel=0},win)
     grad(sdiv,Color3.fromRGB(60,42,110),Color3.fromRGB(28,20,55),90)
 
@@ -441,6 +443,8 @@ function Nova:MakeWindow(opts)
         Size=UDim2.new(1,-(TAB_W+1),1,-TOP_H),
         Position=UDim2.new(0,TAB_W+1,0,TOP_H),
         BackgroundColor3=T.Content,ClipsDescendants=true},win)
+    -- ── FIX: round bottom-right corner of content area ──
+    corner(contentArea,T.R10)
 
     -- ── PLAYER CARD ──────────────────────────────
     new("Frame",{Size=UDim2.new(0,TAB_W,0,1),Position=UDim2.new(0,0,1,-CARD_H),
@@ -450,12 +454,14 @@ function Nova:MakeWindow(opts)
         Size=UDim2.new(0,TAB_W,0,CARD_H-1),
         Position=UDim2.new(0,0,1,-(CARD_H-1)),
         BackgroundColor3=T.Sidebar,BorderSizePixel=0},win)
+    -- ── FIX: round bottom-left corner of player card ──
+    corner(pcCard,T.R10)
     pad(pcCard,9,9,10,8)
     vlist(pcCard,6)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar circle (FIXED: backing Frame clips the ImageLabel cleanly) ──
+    -- ── Avatar circle ──
     local pcAvBg = Instance.new("Frame")
     pcAvBg.Size              = UDim2.new(0,32,0,32)
     pcAvBg.Position          = UDim2.new(0,0,0.5,-16)
@@ -471,7 +477,6 @@ function Nova:MakeWindow(opts)
     _avS.Thickness           = isPremium and 1.8 or 1.2
     _avS.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
 
-    -- ImageLabel is a child of the clipping frame — fully transparent bg, no dark bleed
     local pcAv = Instance.new("ImageLabel")
     pcAv.Size                = UDim2.new(1,0,1,0)
     pcAv.BackgroundTransparency = 1
@@ -481,7 +486,6 @@ function Nova:MakeWindow(opts)
     pcAv.ZIndex              = 3
     pcAv.Parent              = pcAvBg
 
-    -- Crown on pcRow (outside pcAvBg) so it is never clipped
     if isPremium then
         new("TextLabel",{Size=UDim2.new(0,14,0,14),
             Position=UDim2.new(0,26,0,-4),
