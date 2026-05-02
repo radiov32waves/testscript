@@ -292,21 +292,26 @@ function Nova:MakeWindow(opts)
         TextXAlignment=Enum.TextXAlignment.Right,ZIndex=3},topbar)
 
     -- ── TOPBAR CONTROL BUTTONS ────────────────────
-    local function ctrlBtn(text,xOff,hCol,cb)
+    local function ctrlBtn(text,xOff,yOff,hCol,cb)
         local b=new("TextButton",{
-            Size=UDim2.new(0,28,0,28),Position=UDim2.new(1,xOff,0.5,-14),
+            Size=UDim2.new(0,28,0,28),
+            Position=UDim2.new(1,xOff,0.5,yOff or -14),
             BackgroundColor3=T.Glass,Text=text,
             TextColor3=T.TextDim,TextSize=10,Font=T.FontBold,
             BorderSizePixel=0,ZIndex=4},topbar)
         corner(b,T.R6)
-        glassBorder(b,T.BorderElem,1)
+        local bs=glassBorder(b,T.BorderElem,1)
         shimmerLine(b,0.72)
         b.MouseEnter:Connect(function()
             tw(b,{BackgroundColor3=hCol or T.GlassHov})
+            tw(bs,{Color=T.BorderHov})
         end)
-        b.MouseLeave:Connect(function() tw(b,{BackgroundColor3=T.Glass}) end)
+        b.MouseLeave:Connect(function()
+            tw(b,{BackgroundColor3=T.Glass})
+            tw(bs,{Color=T.BorderElem})
+        end)
         b.MouseButton1Click:Connect(cb)
-        return b
+        return b,bs
     end
 
     local minimized=false
@@ -359,8 +364,9 @@ function Nova:MakeWindow(opts)
         end)
     end
 
-    -- FIX: ✕ button removed. Minimize sits at -10 (rightmost slot).
-    local minBtn=ctrlBtn("─",-10,T.GlassHov,function()
+    -- Minimize button: rightmost slot, lifted ~38px above topbar centre (~1 cm)
+    -- Border stored directly from ctrlBtn return so it's always the right UIStroke
+    local minBtn,minBs=ctrlBtn("─",-10,-52,T.GlassHov,function()
         minimized=true; fullSz=win.Size
         tw(win,{Size=UDim2.new(0.82,0,0,0)},.2,Enum.EasingStyle.Quad)
         tw(shadow,{Size=UDim2.new(0.82,60,0,60)},.2,Enum.EasingStyle.Quad)
@@ -373,12 +379,15 @@ function Nova:MakeWindow(opts)
             pulseBubble()
         end)
     end)
-
-    -- Minimize button: accent-tinted border so it reads clearly
-    do
-        local s=minBtn:FindFirstChildOfClass("UIStroke")
-        if s then s.Color=T.AccentSoft; s.Thickness=1.6 end
-    end
+    -- Permanently override minimize border to accent-violet, thicker than default
+    minBs.Color=T.AccentSoft; minBs.Thickness=1.8
+    -- Re-wire hover so it brightens from AccentSoft rather than BorderElem
+    minBtn.MouseEnter:Connect(function()
+        tw(minBs,{Color=T.BorderFocus,Thickness=2.2})
+    end)
+    minBtn.MouseLeave:Connect(function()
+        tw(minBs,{Color=T.AccentSoft,Thickness=1.8})
+    end)
 
     -- Drag
     local _dg,_ds,_ws=false,nil,nil
