@@ -243,13 +243,18 @@ function Nova:MakeWindow(opts)
     self._gui=gui
     ensureHolder(gui)
 
+    -- ── SHADOW: matches win AnchorPoint; slight Y offset gives depth ──
     local shadow=new("ImageLabel",{
-        Size=UDim2.new(0.82,60,0.80,60),
-        Position=UDim2.new(0.5,0,0.5,0),
+        Size=UDim2.new(0.82,80,0.80,80),
+        Position=UDim2.new(0.5,0,0.5,8),
         AnchorPoint=Vector2.new(0.5,0.5),
-        BackgroundTransparency=1,Image="rbxassetid://6014261993",
-        ImageColor3=Color3.new(0,0,0),ImageTransparency=.52,
-        ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(49,49,450,450),ZIndex=0},gui)
+        BackgroundTransparency=1,
+        Image="rbxassetid://5028857084",
+        ImageColor3=Color3.fromRGB(4,3,12),
+        ImageTransparency=0.38,
+        ScaleType=Enum.ScaleType.Slice,
+        SliceCenter=Rect.new(24,24,276,276),
+        ZIndex=0},gui)
 
     local win=new("Frame",{
         Size=UDim2.new(0.82,0,0.80,0),
@@ -402,7 +407,8 @@ function Nova:MakeWindow(opts)
             local d=i.Position-_ds
             local np=UDim2.new(_ws.X.Scale,_ws.X.Offset+d.X,_ws.Y.Scale,_ws.Y.Offset+d.Y)
             win.Position=np
-            shadow.Position=np
+            -- shadow keeps its +8px Y depth offset relative to win
+            shadow.Position=UDim2.new(np.X.Scale,np.X.Offset,np.Y.Scale,np.Y.Offset+8)
         end
     end))
     table.insert(self._conns,UserInputService.InputBegan:Connect(function(i,gp)
@@ -461,21 +467,26 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar circle ──
+    -- ── Avatar circle (ClipsDescendants clips UIStroke too, so we use a separate ring frame) ──
     local pcAvBg = Instance.new("Frame")
-    pcAvBg.Size              = UDim2.new(0,32,0,32)
-    pcAvBg.Position          = UDim2.new(0,0,0.5,-16)
-    pcAvBg.BackgroundColor3  = T.GlassDeep
+    pcAvBg.Size              = UDim2.new(0,34,0,34)   -- slightly larger than avatar for ring gap
+    pcAvBg.Position          = UDim2.new(0,-1,0.5,-17)
+    pcAvBg.BackgroundTransparency = 1
     pcAvBg.BorderSizePixel   = 0
     pcAvBg.ZIndex            = 2
-    pcAvBg.ClipsDescendants  = true
     pcAvBg.Parent            = pcRow
-    local _avBgC = Instance.new("UICorner", pcAvBg)
-    _avBgC.CornerRadius      = UDim.new(1,0)
-    local _avS = Instance.new("UIStroke", pcAvBg)
-    _avS.Color               = isPremium and T.PremBorder or T.BorderElem
-    _avS.Thickness           = isPremium and 1.8 or 1.2
-    _avS.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
+
+    -- Inner clipping frame — clips the image into a circle, no stroke here
+    local pcAvClip = Instance.new("Frame")
+    pcAvClip.Size            = UDim2.new(0,30,0,30)
+    pcAvClip.Position        = UDim2.new(0,2,0,2)
+    pcAvClip.BackgroundColor3= T.GlassDeep
+    pcAvClip.BorderSizePixel = 0
+    pcAvClip.ZIndex          = 3
+    pcAvClip.ClipsDescendants= true
+    pcAvClip.Parent          = pcAvBg
+    local _avClipC = Instance.new("UICorner", pcAvClip)
+    _avClipC.CornerRadius    = UDim.new(1,0)
 
     local pcAv = Instance.new("ImageLabel")
     pcAv.Size                = UDim2.new(1,0,1,0)
@@ -483,8 +494,22 @@ function Nova:MakeWindow(opts)
     pcAv.Image               = "rbxthumb://type=AvatarHeadShot&id="..tostring(LocalPlayer.UserId).."&w=48&h=48"
     pcAv.ScaleType           = Enum.ScaleType.Crop
     pcAv.BorderSizePixel     = 0
-    pcAv.ZIndex              = 3
-    pcAv.Parent              = pcAvBg
+    pcAv.ZIndex              = 4
+    pcAv.Parent              = pcAvClip
+
+    -- Separate ring overlay (not clipping, so its border renders fully)
+    local pcAvRing = Instance.new("Frame")
+    pcAvRing.Size            = UDim2.new(1,0,1,0)
+    pcAvRing.BackgroundTransparency = 1
+    pcAvRing.BorderSizePixel = 0
+    pcAvRing.ZIndex          = 5
+    pcAvRing.Parent          = pcAvBg
+    local _avRingC = Instance.new("UICorner", pcAvRing)
+    _avRingC.CornerRadius    = UDim.new(1,0)
+    local _avRingS = Instance.new("UIStroke", pcAvRing)
+    _avRingS.Color           = isPremium and T.PremBorder or T.AccentSoft
+    _avRingS.Thickness       = isPremium and 2 or 1.5
+    _avRingS.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     if isPremium then
         new("TextLabel",{Size=UDim2.new(0,14,0,14),
