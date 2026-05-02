@@ -456,41 +456,22 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── FIX 2: Avatar circle border
-    -- Root cause: win has ClipsDescendants=true. The UIStroke on pcAvWrap renders
-    -- OUTSIDE the frame bounds, so it gets clipped by any ancestor with
-    -- ClipsDescendants. Solution: increase pcAvWrap size by the stroke thickness
-    -- so the stroke pixel row sits inside the ancestor clip bounds, and set
-    -- ClipsDescendants=false on pcAvWrap so its own children can overflow.
-    -- We also move pcAv inward by 2px on each side so the avatar image stays
-    -- the same visual size while the stroke renders cleanly.
-    local STROKE_W = isPremium and 1.8 or 1.2
-    local PAD      = math.ceil(STROKE_W) + 1  -- 3px safety margin
-
-    -- Wrapper is larger by PAD on each side so the stroke isn't clipped
-    local pcAvWrap=new("Frame",{
-        Size=UDim2.new(0, 30 + PAD*2, 0, 30 + PAD*2),
-        Position=UDim2.new(0, -PAD, 0.5, -(15 + PAD)),
-        BackgroundTransparency=1,
-        BorderSizePixel=0,
-        ZIndex=2,
-        ClipsDescendants=false,   -- stroke must NOT be clipped here
-    },pcRow)
-    corner(pcAvWrap, T.RFull)
-    glassBorder(pcAvWrap,
-        isPremium and T.PremBorder or T.BorderElem,
-        STROKE_W)
-
-    -- Inner image frame: sits PAD px inset so the visible avatar is still 30×30
+    -- ── Avatar: circle image frame with inward Border stroke
+    -- ApplyStrokeMode.Border draws the stroke inside the frame bounds,
+    -- so it is never clipped by ClipsDescendants ancestors.
     local pcAv=new("Frame",{
-        Size=UDim2.new(0, 30, 0, 30),
-        Position=UDim2.new(0, PAD, 0, PAD),
+        Size=UDim2.new(0,30,0,30),
+        Position=UDim2.new(0,0,0.5,-15),
         BackgroundColor3=T.Glass,
         BorderSizePixel=0,
         ZIndex=2,
         ClipsDescendants=true,
-    },pcAvWrap)
+    },pcRow)
     corner(pcAv,T.RFull)
+    local avStroke=Instance.new("UIStroke",pcAv)
+    avStroke.Color=isPremium and T.PremBorder or T.BorderElem
+    avStroke.Thickness=isPremium and 1.8 or 1.2
+    avStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 
     new("ImageLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,
         Image="https://www.roblox.com/headshot-thumbnail/image?userId="
