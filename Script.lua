@@ -175,41 +175,46 @@ function Nova:MakeNotification(opts)
     local t=opts.Time or 4
     ensureHolder(self._gui or LocalPlayer.PlayerGui)
 
-    local card=new("Frame",{Size=UDim2.new(1,0,0,66),
-        BackgroundColor3=Color3.fromRGB(16,13,30),
-        BorderSizePixel=0,ClipsDescendants=true,ZIndex=101},_nh)
-    corner(card,T.R9)
-    glassBorder(card,T.BorderCard,1.2)
-    shimmerLine(card,0.6)
-    local ab=new("Frame",{Size=UDim2.new(0,2,1,0),
-        BackgroundColor3=T.Accent,BorderSizePixel=0,ZIndex=102},card)
-    grad(ab,T.AccentSoft,T.AccentGlow,90)
+    -- single flat card: one bg, one Border stroke, no sub-frames
+    local card=new("Frame",{
+        Size=UDim2.new(1,0,0,62),
+        BackgroundColor3=Color3.fromRGB(13,11,26),
+        BorderSizePixel=0,ZIndex=101},_nh)
+    corner(card,T.R8)
+    local cardStroke=Instance.new("UIStroke",card)
+    cardStroke.Color=T.BorderCard
+    cardStroke.Thickness=1.2
+    cardStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 
-    local xOff=img~="" and 52 or 14
+    local xOff=img~="" and 50 or 12
     if img~="" then
-        local ic=new("Frame",{Size=UDim2.new(0,32,0,32),
-            Position=UDim2.new(0,12,0.5,-16),
-            BackgroundColor3=T.AccentDark,BorderSizePixel=0,ZIndex=102,
-            ClipsDescendants=true},card)
+        local ic=new("Frame",{Size=UDim2.new(0,30,0,30),
+            Position=UDim2.new(0,10,0.5,-15),
+            BackgroundColor3=T.AccentDark,BorderSizePixel=0,
+            ZIndex=102,ClipsDescendants=true},card)
         corner(ic,T.RFull)
-        glassBorder(ic,T.BorderBtn,1)
+        local icS=Instance.new("UIStroke",ic)
+        icS.Color=T.BorderBtn; icS.Thickness=1
+        icS.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
         new("ImageLabel",{Size=UDim2.new(1,0,1,0),
             BackgroundTransparency=1,Image=img,ZIndex=103},ic)
     end
     new("TextLabel",{Size=UDim2.new(1,-(xOff+8),0,18),
-        Position=UDim2.new(0,xOff,0,9),BackgroundTransparency=1,
+        Position=UDim2.new(0,xOff,0,8),BackgroundTransparency=1,
         Text=title,TextColor3=T.Text,TextSize=12,Font=T.FontBold,
         TextXAlignment=Enum.TextXAlignment.Left,ZIndex=102},card)
-    new("TextLabel",{Size=UDim2.new(1,-(xOff+8),0,28),
-        Position=UDim2.new(0,xOff,0,28),BackgroundTransparency=1,
+    new("TextLabel",{Size=UDim2.new(1,-(xOff+8),0,26),
+        Position=UDim2.new(0,xOff,0,27),BackgroundTransparency=1,
         Text=body,TextColor3=T.TextSub,TextSize=10,Font=T.FontLight,
         TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,ZIndex=102},card)
-    local prog=new("Frame",{Size=UDim2.new(1,0,0,2),
+    local progBg=new("Frame",{Size=UDim2.new(1,0,0,2),
         Position=UDim2.new(0,0,1,-2),
-        BackgroundColor3=T.AccentGlow,BorderSizePixel=0,ZIndex=103},card)
+        BackgroundColor3=Color3.fromRGB(28,22,52),BorderSizePixel=0,ZIndex=102},card)
+    local prog=new("Frame",{Size=UDim2.new(1,0,1,0),
+        BackgroundColor3=T.Accent,BorderSizePixel=0,ZIndex=103},progBg)
     card.Position=UDim2.new(1,12,0,0)
     tw(card,{Position=UDim2.new(0,0,0,0)},.3,Enum.EasingStyle.Back)
-    tw(prog,{Size=UDim2.new(0,0,0,2)},t,Enum.EasingStyle.Linear)
+    tw(prog,{Size=UDim2.new(0,0,1,0)},t,Enum.EasingStyle.Linear)
     task.delay(t,function()
         tw(card,{Position=UDim2.new(1,12,0,0)},.22)
         task.wait(.28); card:Destroy()
@@ -473,10 +478,12 @@ function Nova:MakeWindow(opts)
     avStroke.Thickness=isPremium and 1.8 or 1.2
     avStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 
-    new("ImageLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,
+    local avImg=new("ImageLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,
         Image="https://www.roblox.com/headshot-thumbnail/image?userId="
             ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
         ZIndex=3},pcAv)
+    -- UICorner on the ImageLabel itself ensures circle clip in all executors
+    Instance.new("UICorner",avImg).CornerRadius=UDim.new(1,0)
 
     -- Crown on pcRow (outside pcAv) so it never gets clipped
     if isPremium then
