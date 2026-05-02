@@ -239,6 +239,15 @@ function Nova:MakeWindow(opts)
     self._gui=gui
     ensureHolder(gui)
 
+    -- Drop shadow lives on gui (not win) so ClipsDescendants on win can't eat it
+    local shadow=new("ImageLabel",{
+        Size=UDim2.new(0.82,60,0.80,60),
+        Position=UDim2.new(0.5,0,0.5,0),
+        AnchorPoint=Vector2.new(0.5,0.5),
+        BackgroundTransparency=1,Image="rbxassetid://6014261993",
+        ImageColor3=Color3.new(0,0,0),ImageTransparency=.52,
+        ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(49,49,450,450),ZIndex=0},gui)
+
     local win=new("Frame",{
         Size=UDim2.new(0.82,0,0.80,0),
         Position=UDim2.new(0.5,0,0.5,0),
@@ -248,18 +257,10 @@ function Nova:MakeWindow(opts)
     corner(win,T.R10)
     glassBorder(win,T.BorderWin,1.5)
 
-    new("ImageLabel",{Size=UDim2.new(1,60,1,60),Position=UDim2.new(0,-30,0,-30),
-        BackgroundTransparency=1,Image="rbxassetid://6014261993",
-        ImageColor3=Color3.new(0,0,0),ImageTransparency=.5,
-        ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(49,49,450,450),ZIndex=0},win)
-
     -- ── TOP BAR ──────────────────────────────────
     local topbar=new("Frame",{Size=UDim2.new(1,0,0,TOP_H),
         BackgroundColor3=T.TopBar,BorderSizePixel=0,ZIndex=2},win)
     corner(topbar,T.R10)
-    new("Frame",{Size=UDim2.new(1,0,0,14),Position=UDim2.new(0,0,1,-14),
-        BackgroundColor3=T.TopBar,BorderSizePixel=0,ZIndex=2},topbar)
-
     shimmerLine(topbar,0.68)
 
     local acLine=new("Frame",{Size=UDim2.new(0,0,0,1),Position=UDim2.new(0,0,1,-1),
@@ -308,17 +309,10 @@ function Nova:MakeWindow(opts)
         return b
     end
 
-    ctrlBtn("✕",-10,Color3.fromRGB(185,45,45),function()
-        pcall(closeCb or function()end)
-        tw(win,{Size=UDim2.new(0.82,0,0,0)},.26,Enum.EasingStyle.Back,Enum.EasingDirection.In)
-        task.delay(.32,function() gui:Destroy() end)
-    end)
-
     local minimized=false
     local fullSz=UDim2.new(0.82,0,0.80,0)
 
     -- ── FLOATING RESTORE BUBBLE ──────────────────
-    -- FIX: ClipsDescendants=true so hamburger bars don't bleed outside the rounded bubble
     local bubble=new("Frame",{Size=UDim2.new(0,42,0,42),
         Position=UDim2.new(1,-52,0,8),
         BackgroundColor3=Color3.fromRGB(16,12,34),
@@ -348,8 +342,11 @@ function Nova:MakeWindow(opts)
         tw(bubStroke,{Color=T.Accent,Thickness=1.4})
     end)
     bubBtn.MouseButton1Click:Connect(function()
-        minimized=false; bubble.Visible=false; win.Visible=true
+        minimized=false; bubble.Visible=false
+        win.Visible=true; shadow.Visible=true
         tw(win,{Size=fullSz},.3,Enum.EasingStyle.Back)
+        tw(shadow,{Size=UDim2.new(fullSz.X.Scale,fullSz.X.Offset+60,
+                                  fullSz.Y.Scale,fullSz.Y.Offset+60)},.3,Enum.EasingStyle.Back)
     end)
 
     local function pulseBubble()
@@ -362,12 +359,13 @@ function Nova:MakeWindow(opts)
         end)
     end
 
-    -- FIX: capture return value so we can override the minimize button's border
-    local minBtn=ctrlBtn("─",-44,T.GlassHov,function()
+    -- FIX: ✕ button removed. Minimize sits at -10 (rightmost slot).
+    local minBtn=ctrlBtn("─",-10,T.GlassHov,function()
         minimized=true; fullSz=win.Size
         tw(win,{Size=UDim2.new(0.82,0,0,0)},.2,Enum.EasingStyle.Quad)
+        tw(shadow,{Size=UDim2.new(0.82,60,0,60)},.2,Enum.EasingStyle.Quad)
         task.delay(.25,function()
-            win.Visible=false; bubble.Visible=true
+            win.Visible=false; shadow.Visible=false; bubble.Visible=true
             bubble.Size=UDim2.new(0,0,0,0)
             bubble.Position=UDim2.new(1,-32,0,30)
             tw(bubble,{Size=UDim2.new(0,42,0,42),Position=UDim2.new(1,-52,0,8)},
@@ -376,7 +374,7 @@ function Nova:MakeWindow(opts)
         end)
     end)
 
-    -- FIX: make the minimize button border more visible (accent-tinted, thicker)
+    -- Minimize button: accent-tinted border so it reads clearly
     do
         local s=minBtn:FindFirstChildOfClass("UIStroke")
         if s then s.Color=T.AccentSoft; s.Thickness=1.6 end
@@ -394,12 +392,16 @@ function Nova:MakeWindow(opts)
     table.insert(self._conns,UserInputService.InputChanged:Connect(function(i)
         if _dg and i.UserInputType==Enum.UserInputType.MouseMovement then
             local d=i.Position-_ds
-            win.Position=UDim2.new(_ws.X.Scale,_ws.X.Offset+d.X,
-                                   _ws.Y.Scale,_ws.Y.Offset+d.Y)
+            local np=UDim2.new(_ws.X.Scale,_ws.X.Offset+d.X,_ws.Y.Scale,_ws.Y.Offset+d.Y)
+            win.Position=np
+            shadow.Position=np
         end
     end))
     table.insert(self._conns,UserInputService.InputBegan:Connect(function(i,gp)
-        if not gp and i.KeyCode==toggleKey then win.Visible=not win.Visible end
+        if not gp and i.KeyCode==toggleKey then
+            local v=not win.Visible
+            win.Visible=v; shadow.Visible=v
+        end
     end))
 
     -- ── PREMIUM ID CHECK ─────────────────────────
@@ -508,7 +510,9 @@ function Nova:MakeWindow(opts)
     end
 
     win.Size=UDim2.new(0.82,0,0,0)
+    shadow.Size=UDim2.new(0.82,60,0,60)
     tw(win,{Size=UDim2.new(0.82,0,0.80,0)},.4,Enum.EasingStyle.Back)
+    tw(shadow,{Size=UDim2.new(0.82,60,0.80,60)},.4,Enum.EasingStyle.Back)
 
     -- ════════════════════════════════════════════
     --  WINDOW OBJECT
