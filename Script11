@@ -264,7 +264,7 @@ function Nova:MakeWindow(opts)
     Nova._gui = gui
     ensureHolder(gui)
 
-    if introEnabled then playIntro(gui, introText, introIcon) end
+
 
     -- ── WINDOW FRAME ─────────────────────────────
     -- Scale-based: matches photo on any screen size
@@ -304,49 +304,24 @@ function Nova:MakeWindow(opts)
     }, topbar)
     tw(accentLine,{Size=UDim2.new(1,0,0,1)}, .6, Enum.EasingStyle.Quad)
 
-    -- ── PLAYER AVATAR CIRCLE (like photo bottom-left but in topbar) ──────
-    -- Photo shows avatar + name at bottom-left; we move it to topbar left
-    local avatarCircle = new("Frame",{
-        Size=UDim2.new(0,32,0,32), Position=UDim2.new(0,10,0.5,-16),
-        BackgroundColor3=T.BG3, BorderSizePixel=0, ZIndex=4,
-    }, topbar)
-    corner(avatarCircle, T.RadFull)
-    -- violet ring like the photo
-    local avatarRing = new("Frame",{
-        Size=UDim2.new(0,38,0,38), Position=UDim2.new(0,7,0.5,-19),
-        BackgroundTransparency=1, BorderSizePixel=0, ZIndex=3,
-    }, topbar)
-    corner(avatarRing, T.RadFull)
-    stroke(avatarRing, T.Accent, 2)
+    -- (avatar moved to sidebar player card below)
 
-    -- Headshot thumbnail
-    local avatarImg = new("ImageLabel",{
-        Size=UDim2.new(1,0,1,0),
-        BackgroundTransparency=1,
-        Image="https://www.roblox.com/headshot-thumbnail/image?userId="
-            ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
-        ZIndex=5,
-    }, avatarCircle)
-    corner(avatarImg, T.RadFull)
+    -- ── Premium whitelist — add Roblox User IDs here ──────────────────
+    local PREMIUM_IDS = {
+        -- e.g.  123456789,  987654321
+    }
+    local isPremium = false
+    for _, id in ipairs(PREMIUM_IDS) do
+        if LocalPlayer.UserId == id then isPremium = true; break end
+    end
 
-    -- Title text (slightly right of avatar)
+    -- Title centred vertically in topbar
     new("TextLabel",{
-        Size=UDim2.new(1,-200,1,0), Position=UDim2.new(0,54,0,0),
+        Size=UDim2.new(1,-80,1,0), Position=UDim2.new(0,14,0,0),
         BackgroundTransparency=1, Text=title,
         TextColor3=T.Text, TextSize=14, Font=T.FontBold,
         TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
     }, topbar)
-
-    -- Player name label (below title, same left area) — small muted
-    if not hidePremium then
-        new("TextLabel",{
-            Size=UDim2.new(0,160,0,14), Position=UDim2.new(0,54,1,-20),
-            BackgroundTransparency=1,
-            Text=LocalPlayer.Name,
-            TextColor3=T.TextDim, TextSize=10, Font=T.FontLight,
-            TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
-        }, topbar)
-    end
 
     -- ── WINDOW CONTROL BUTTONS ────────────────────
     -- Minimize button: on click, window hides and a small circle appears top-right
@@ -488,13 +463,15 @@ function Nova:MakeWindow(opts)
         if not gp and i.KeyCode==toggleKey then win.Visible=not win.Visible end
     end))
 
-    -- ── SIDEBAR  (Workly-style: slightly lighter than BG, padded) ────
+    -- ── SIDEBAR  (Workly-style) ─────────────────────────────────────
+    local CARD_H = 86   -- player card height at bottom of sidebar
+
     local tabBar = new("Frame",{
-        Size=UDim2.new(0,TAB_W,1,-TOP_H), Position=UDim2.new(0,0,0,TOP_H),
+        Size=UDim2.new(0,TAB_W,1,-(TOP_H+CARD_H)), Position=UDim2.new(0,0,0,TOP_H),
         BackgroundColor3=Color3.fromRGB(13,11,22), BorderSizePixel=0,
     }, win)
     listLayout(tabBar, Enum.FillDirection.Vertical, 1)
-    pad(tabBar,10,10,8,8)
+    pad(tabBar,10,4,8,8)
 
     -- thin separator line
     new("Frame",{
@@ -506,6 +483,95 @@ function Nova:MakeWindow(opts)
         Size=UDim2.new(1,-(TAB_W+1),1,-TOP_H), Position=UDim2.new(0,TAB_W+1,0,TOP_H),
         BackgroundColor3=Color3.fromRGB(8,7,16), ClipsDescendants=true,
     }, win)
+
+    -- ── PLAYER CARD  (Orion-style bottom of sidebar) ─────────────────
+    -- Thin divider above card
+    new("Frame",{
+        Size=UDim2.new(0,TAB_W,0,1), Position=UDim2.new(0,0,1,-CARD_H),
+        BackgroundColor3=Color3.fromRGB(28,24,48), BorderSizePixel=0,
+    }, win)
+
+    local playerCard = new("Frame",{
+        Size=UDim2.new(0,TAB_W,0,CARD_H-1), Position=UDim2.new(0,0,1,-(CARD_H-1)),
+        BackgroundColor3=Color3.fromRGB(13,11,22), BorderSizePixel=0,
+    }, win)
+    pad(playerCard,10,10,10,8)
+    listLayout(playerCard, Enum.FillDirection.Vertical, 4)
+
+    -- Avatar circle (36x36)
+    local pcAvatarWrap = new("Frame",{
+        Size=UDim2.new(1,0,0,36), BackgroundTransparency=1,
+    }, playerCard)
+
+    local pcAv = new("Frame",{
+        Size=UDim2.new(0,32,0,32), Position=UDim2.new(0,0,0.5,-16),
+        BackgroundColor3=T.BG3, BorderSizePixel=0, ZIndex=2,
+    }, pcAvatarWrap)
+    corner(pcAv, T.RadFull)
+    local pcAvImg = new("ImageLabel",{
+        Size=UDim2.new(1,0,1,0), BackgroundTransparency=1,
+        Image="https://www.roblox.com/headshot-thumbnail/image?userId="
+            ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
+        ZIndex=3,
+    }, pcAv)
+    corner(pcAvImg, T.RadFull)
+
+    -- Name + username stacked to the right of avatar
+    local pcNames = new("Frame",{
+        Size=UDim2.new(1,-40,1,0), Position=UDim2.new(0,38,0,0),
+        BackgroundTransparency=1,
+    }, pcAvatarWrap)
+    listLayout(pcNames, Enum.FillDirection.Vertical, 1)
+    pad(pcNames,4,0,0,0)
+
+    new("TextLabel",{
+        Size=UDim2.new(1,0,0,15), BackgroundTransparency=1,
+        Text=LocalPlayer.DisplayName,
+        TextColor3=Color3.fromRGB(220,215,245), TextSize=12, Font=T.FontBold,
+        TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd,
+    }, pcNames)
+
+    new("TextLabel",{
+        Size=UDim2.new(1,0,0,12), BackgroundTransparency=1,
+        Text="@"..LocalPlayer.Name,
+        TextColor3=Color3.fromRGB(80,70,115), TextSize=10, Font=T.FontLight,
+        TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd,
+    }, pcNames)
+
+    -- Premium / Free badge
+    local badgeBg = new("Frame",{
+        Size=UDim2.new(0, isPremium and 76 or 48, 0, 18),
+        BackgroundColor3 = isPremium
+            and Color3.fromRGB(50,28,130)
+            or  Color3.fromRGB(22,18,42),
+        BorderSizePixel=0,
+    }, playerCard)
+    corner(badgeBg, T.RadFull)
+
+    if isPremium then
+        local bs = Instance.new("UIStroke", badgeBg)
+        bs.Color = Color3.fromRGB(140,100,255); bs.Thickness = 1
+        local bg2 = Instance.new("UIGradient", badgeBg)
+        bg2.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(85,45,215)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150,95,255)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(85,45,215)),
+        }
+        bg2.Rotation = 90
+    else
+        local bs = Instance.new("UIStroke", badgeBg)
+        bs.Color = Color3.fromRGB(40,32,72); bs.Thickness = 1
+    end
+
+    new("TextLabel",{
+        Size=UDim2.new(1,0,1,0), BackgroundTransparency=1,
+        Text = isPremium and "★  Premium" or "Free",
+        TextColor3 = isPremium
+            and Color3.fromRGB(210,190,255)
+            or  Color3.fromRGB(90,80,130),
+        TextSize=9, Font=T.FontBold,
+        TextXAlignment=Enum.TextXAlignment.Center, ZIndex=2,
+    }, badgeBg)
 
     -- entrance
     win.Size = UDim2.new(0.78,0,0,0)
