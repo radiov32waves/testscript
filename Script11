@@ -1,7 +1,7 @@
 --[[
 ╔══════════════════════════════════════════════════╗
-║           NOVA UI LIBRARY  v3.0                  ║
-║     Premium · Compact · Refined                  ║
+║           NOVA UI LIBRARY  v4.0                  ║
+║     Premium · iPhone-scale · Refined             ║
 ╠══════════════════════════════════════════════════╣
 ║  MakeWindow · MakeTab · AddSection               ║
 ║  AddButton · AddToggle · AddSlider               ║
@@ -27,10 +27,9 @@ local function safeRead(p)     local ok,d=pcall(readfile,p); return ok and d or 
 local function safeMkdir(p)    pcall(makefolder,p) end
 
 -- ════════════════════════════════════════════════
---  THEME  — premium dark with gold-violet accent
+--  THEME
 -- ════════════════════════════════════════════════
 local T = {
-    -- Backgrounds (deeper, richer)
     BG          = Color3.fromRGB(10, 9, 18),
     BG2         = Color3.fromRGB(15, 14, 26),
     BG3         = Color3.fromRGB(20, 18, 34),
@@ -39,30 +38,24 @@ local T = {
     TabHover    = Color3.fromRGB(20, 17, 34),
     TabActive   = Color3.fromRGB(25, 21, 44),
     Section     = Color3.fromRGB(16, 14, 28),
-    -- Accent: rich violet with subtle gold hint
     Accent      = Color3.fromRGB(120, 80, 255),
     AccentSoft  = Color3.fromRGB(140, 100, 255),
     AccentDark  = Color3.fromRGB(48, 30, 110),
     AccentGlow  = Color3.fromRGB(80, 40, 180),
-    -- Text hierarchy
     Text        = Color3.fromRGB(230, 225, 248),
     TextSub     = Color3.fromRGB(160, 150, 195),
     TextDim     = Color3.fromRGB(90, 80, 125),
     TextMuted   = Color3.fromRGB(50, 42, 78),
-    -- Elements
     ToggleOff   = Color3.fromRGB(26, 22, 46),
     Divider     = Color3.fromRGB(24, 20, 42),
     Stroke      = Color3.fromRGB(38, 30, 72),
     StrokeHover = Color3.fromRGB(80, 60, 150),
-    -- Status
     Success     = Color3.fromRGB(70, 220, 140),
     Warning     = Color3.fromRGB(240, 190, 60),
     Danger      = Color3.fromRGB(230, 70, 70),
-    -- Typography
     Font        = Enum.Font.GothamSemibold,
     FontLight   = Enum.Font.Gotham,
     FontBold    = Enum.Font.GothamBold,
-    -- Radii
     RadMain     = UDim.new(0, 10),
     RadElem     = UDim.new(0, 6),
     RadBtn      = UDim.new(0, 5),
@@ -70,7 +63,7 @@ local T = {
 }
 
 -- ════════════════════════════════════════════════
---  INTERNAL HELPERS
+--  HELPERS
 -- ════════════════════════════════════════════════
 local function tw(obj, props, t, es, ed)
     TweenService:Create(obj,
@@ -110,7 +103,6 @@ local function listLayout(p, dir, spacing)
     }, p)
 end
 
--- Subtle gradient helper for premium feel
 local function addGradient(parent, c0, c1, rot)
     local g = Instance.new("UIGradient", parent)
     g.Color = ColorSequence.new(c0 or T.BG2, c1 or T.BG3)
@@ -128,7 +120,7 @@ Nova._conns     = {}
 Nova._gui       = nil
 
 -- ────────────────────────────────────────────────
---  NOTIFICATION  (compact & refined)
+--  NOTIFICATION
 -- ────────────────────────────────────────────────
 local notifHolder
 
@@ -157,17 +149,13 @@ function Nova:MakeNotification(opts)
         BorderSizePixel=0, ClipsDescendants=true, ZIndex=101,
     }, notifHolder)
     corner(card, T.RadElem)
+    stroke(card, T.Stroke, 1)
 
-    local cstroke = stroke(card, T.Stroke, 1)
-
-    -- Accent left bar
     local bar = new("Frame",{
         Size=UDim2.new(0,2,1,0), BackgroundColor3=T.Accent,
         BorderSizePixel=0, ZIndex=102
     }, card)
-    addGradient(bar,
-        Color3.fromRGB(140,100,255),
-        Color3.fromRGB(80,40,180), 90)
+    addGradient(bar, Color3.fromRGB(140,100,255), Color3.fromRGB(80,40,180), 90)
 
     local xOff = image~="" and 46 or 10
     if image~="" then
@@ -191,7 +179,6 @@ function Nova:MakeNotification(opts)
         TextWrapped=true, ZIndex=102,
     }, card)
 
-    -- progress bar
     local prog = new("Frame",{
         Size=UDim2.new(1,0,0,2), Position=UDim2.new(0,0,1,-2),
         BackgroundColor3=T.AccentGlow, BorderSizePixel=0, ZIndex=103,
@@ -208,7 +195,7 @@ function Nova:MakeNotification(opts)
 end
 
 -- ────────────────────────────────────────────────
---  INTRO  (clean fade)
+--  INTRO
 -- ────────────────────────────────────────────────
 local function playIntro(gui, text, icon)
     local ov = new("Frame",{
@@ -242,7 +229,10 @@ local function playIntro(gui, text, icon)
 end
 
 -- ════════════════════════════════════════════════
---  MAKE WINDOW  (compact: 480×400)
+--  MAKE WINDOW
+--  iPhone 16 Pro viewport ≈ 393×852 pts
+--  Photo UI fills ~85% width → ~540px wide
+--  Height ≈ 58% of screen → ~490px  (minus footer → ~450)
 -- ════════════════════════════════════════════════
 function Nova:MakeWindow(opts)
     opts = opts or {}
@@ -257,6 +247,13 @@ function Nova:MakeWindow(opts)
     local closeCb      = opts.CloseCallback or nil
     local toggleKey    = opts.Key           or Enum.KeyCode.RightShift
 
+    -- Window dimensions matching the photo on iPhone 16 Pro
+    -- Wide (~86% of 393pt scaled) and shorter than before, no footer
+    local WIN_W = 540
+    local WIN_H = 450  -- reduced from photo since we removed footer area
+    local TOP_H = 48   -- topbar height (photo has a tall header)
+    local TAB_W = 128  -- sidebar width (photo sidebar is ~25% of width)
+
     if saveConfig then safeMkdir(cfgFolder) end
 
     local gui = new("ScreenGui",{
@@ -268,114 +265,154 @@ function Nova:MakeWindow(opts)
 
     if introEnabled then playIntro(gui, introText, introIcon) end
 
-    -- ── WINDOW FRAME  (480×400 — compact) ────────
+    -- ── WINDOW FRAME ─────────────────────────────
     local win = new("Frame",{
-        Size=UDim2.new(0,480,0,400),
-        Position=UDim2.new(0.5,-240,0.5,-200),
+        Size=UDim2.new(0,WIN_W,0,WIN_H),
+        Position=UDim2.new(0.5,-WIN_W/2,0.5,-WIN_H/2),
         BackgroundColor3=T.BG, BorderSizePixel=0, ClipsDescendants=true,
     }, gui)
     corner(win, T.RadMain)
+    stroke(win, T.Stroke, 1)
 
-    -- subtle outer stroke
-    local wstroke = stroke(win, T.Stroke, 1)
-
-    -- drop shadow (soft)
+    -- drop shadow
     new("ImageLabel",{
         Size=UDim2.new(1,40,1,40), Position=UDim2.new(0,-20,0,-20),
         BackgroundTransparency=1, Image="rbxassetid://6014261993",
-        ImageColor3=Color3.new(0,0,0), ImageTransparency=.55,
+        ImageColor3=Color3.new(0,0,0), ImageTransparency=.5,
         ScaleType=Enum.ScaleType.Slice, SliceCenter=Rect.new(49,49,450,450), ZIndex=0,
     }, win)
 
-    -- ── TOP BAR  (42px, premium gradient) ────────
+    -- ── TOP BAR  (matches photo: player avatar + name left, controls right) ──
     local topbar = new("Frame",{
-        Size=UDim2.new(1,0,0,42), BackgroundColor3=T.TopBar,
+        Size=UDim2.new(1,0,0,TOP_H), BackgroundColor3=T.TopBar,
         BorderSizePixel=0, ZIndex=2,
     }, win)
     corner(topbar, T.RadMain)
-    -- fill bottom of rounded topbar
+    -- fill bottom rounded corners
     new("Frame",{
-        Size=UDim2.new(1,0,0,12), Position=UDim2.new(0,0,1,-12),
+        Size=UDim2.new(1,0,0,14), Position=UDim2.new(0,0,1,-14),
         BackgroundColor3=T.TopBar, BorderSizePixel=0, ZIndex=2
     }, topbar)
 
-    -- thin accent line under topbar
+    -- animated accent line
     local accentLine = new("Frame",{
         Size=UDim2.new(0,0,0,1), Position=UDim2.new(0,0,1,-1),
         BackgroundColor3=T.Accent, BorderSizePixel=0, ZIndex=3,
     }, topbar)
     tw(accentLine,{Size=UDim2.new(1,0,0,1)}, .6, Enum.EasingStyle.Quad)
 
-    -- logo dot or icon
-    if winIcon~="" then
-        new("ImageLabel",{
-            Size=UDim2.new(0,22,0,22), Position=UDim2.new(0,12,0.5,-11),
-            BackgroundTransparency=1, Image=winIcon, ZIndex=3,
-        }, topbar)
-    else
-        local dot = new("Frame",{
-            Size=UDim2.new(0,7,0,7), Position=UDim2.new(0,14,0.5,-3.5),
-            BackgroundColor3=T.Accent, BorderSizePixel=0, ZIndex=3,
-        }, topbar)
-        corner(dot, T.RadFull)
-        -- glow ring
-        local ring = new("Frame",{
-            Size=UDim2.new(0,13,0,13), Position=UDim2.new(0,11,0.5,-6.5),
-            BackgroundColor3=T.AccentGlow, BackgroundTransparency=.6,
-            BorderSizePixel=0, ZIndex=2,
-        }, topbar)
-        corner(ring, T.RadFull)
-    end
+    -- ── PLAYER AVATAR CIRCLE (like photo bottom-left but in topbar) ──────
+    -- Photo shows avatar + name at bottom-left; we move it to topbar left
+    local avatarCircle = new("Frame",{
+        Size=UDim2.new(0,32,0,32), Position=UDim2.new(0,10,0.5,-16),
+        BackgroundColor3=T.BG3, BorderSizePixel=0, ZIndex=4,
+    }, topbar)
+    corner(avatarCircle, T.RadFull)
+    -- violet ring like the photo
+    local avatarRing = new("Frame",{
+        Size=UDim2.new(0,38,0,38), Position=UDim2.new(0,7,0.5,-19),
+        BackgroundTransparency=1, BorderSizePixel=0, ZIndex=3,
+    }, topbar)
+    corner(avatarRing, T.RadFull)
+    stroke(avatarRing, T.Accent, 2)
 
+    -- Headshot thumbnail
+    local avatarImg = new("ImageLabel",{
+        Size=UDim2.new(1,0,1,0),
+        BackgroundTransparency=1,
+        Image="https://www.roblox.com/headshot-thumbnail/image?userId="
+            ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
+        ZIndex=5,
+    }, avatarCircle)
+    corner(avatarImg, T.RadFull)
+
+    -- Title text (slightly right of avatar)
     new("TextLabel",{
-        Size=UDim2.new(1,-110,1,0), Position=UDim2.new(0,30,0,0),
+        Size=UDim2.new(1,-200,1,0), Position=UDim2.new(0,54,0,0),
         BackgroundTransparency=1, Text=title,
-        TextColor3=T.Text, TextSize=13, Font=T.FontBold,
+        TextColor3=T.Text, TextSize=14, Font=T.FontBold,
         TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
     }, topbar)
 
-    -- key hint
-    new("TextLabel",{
-        Size=UDim2.new(0,80,1,0), Position=UDim2.new(1,-122,0,0),
-        BackgroundTransparency=1,
-        Text=toggleKey.Name,
-        TextColor3=T.TextMuted, TextSize=9, Font=T.FontLight,
-        TextXAlignment=Enum.TextXAlignment.Right, ZIndex=3,
-    }, topbar)
-
-    -- window control buttons
-    local function topBtn(icon, xOff, hCol, cb)
-        local b = new("TextButton",{
-            Size=UDim2.new(0,22,0,22), Position=UDim2.new(1,xOff,0.5,-11),
-            BackgroundColor3=T.BG3, Text=icon,
-            TextColor3=T.TextDim, TextSize=10, Font=T.FontBold,
-            BorderSizePixel=0, ZIndex=4,
+    -- Player name label (below title, same left area) — small muted
+    if not hidePremium then
+        new("TextLabel",{
+            Size=UDim2.new(0,160,0,14), Position=UDim2.new(0,54,1,-20),
+            BackgroundTransparency=1,
+            Text=LocalPlayer.Name,
+            TextColor3=T.TextDim, TextSize=10, Font=T.FontLight,
+            TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
         }, topbar)
-        corner(b, T.RadBtn)
-        b.MouseEnter:Connect(function() tw(b,{BackgroundColor3=hCol or T.BG2}) end)
-        b.MouseLeave:Connect(function() tw(b,{BackgroundColor3=T.BG3}) end)
-        b.MouseButton1Click:Connect(cb)
-        return b
     end
 
-    topBtn("✕", -10, Color3.fromRGB(200,55,55), function()
+    -- ── WINDOW CONTROL BUTTONS ────────────────────
+    -- Minimize button: on click, window hides and a small circle appears top-right
+    local minimized = false
+    local fullSz    = UDim2.new(0,WIN_W,0,WIN_H)
+
+    -- The floating restore bubble (hidden by default)
+    local bubble = new("TextButton",{
+        Size=UDim2.new(0,36,0,36),
+        Position=UDim2.new(1,-46,0,8),   -- top-right corner of screen
+        BackgroundColor3=T.Accent,
+        Text="◈", TextColor3=Color3.new(1,1,1),
+        TextSize=14, Font=T.FontBold,
+        BorderSizePixel=0, ZIndex=200,
+        Visible=false,
+    }, gui)
+    corner(bubble, T.RadFull)
+    stroke(bubble, T.AccentSoft, 1.5)
+    -- subtle pulse gradient
+    addGradient(bubble, Color3.fromRGB(140,100,255), Color3.fromRGB(80,40,200), 135)
+
+    bubble.MouseButton1Click:Connect(function()
+        minimized=false
+        bubble.Visible=false
+        win.Visible=true
+        tw(win,{Size=fullSz}, .28, Enum.EasingStyle.Back)
+    end)
+
+    -- Close button
+    local closeBtn = new("TextButton",{
+        Size=UDim2.new(0,28,0,28), Position=UDim2.new(1,-10,0.5,-14),
+        BackgroundColor3=T.BG3, Text="✕",
+        TextColor3=T.TextDim, TextSize=11, Font=T.FontBold,
+        BorderSizePixel=0, ZIndex=4,
+    }, topbar)
+    corner(closeBtn, UDim.new(0,5))
+    closeBtn.MouseEnter:Connect(function() tw(closeBtn,{BackgroundColor3=Color3.fromRGB(200,55,55)}) end)
+    closeBtn.MouseLeave:Connect(function() tw(closeBtn,{BackgroundColor3=T.BG3}) end)
+    closeBtn.MouseButton1Click:Connect(function()
         if closeCb then pcall(closeCb) end
-        tw(win,{
-            Size=UDim2.new(0,480,0,0),
-            Position=UDim2.new(0.5,-240,0.5,0)
-        }, .28, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        bubble.Visible=false
+        tw(win,{Size=UDim2.new(0,WIN_W,0,0), Position=UDim2.new(0.5,-WIN_W/2,0.5,0)},
+            .28, Enum.EasingStyle.Back, Enum.EasingDirection.In)
         task.delay(.35, function() gui:Destroy() end)
     end)
 
-    local minimized=false; local fullSz=win.Size
-    topBtn("─", -38, T.BG2, function()
-        minimized = not minimized
-        if minimized then
-            fullSz = win.Size
-            tw(win,{Size=UDim2.new(0,480,0,42)}, .2)
-        else
-            tw(win,{Size=fullSz}, .28, Enum.EasingStyle.Back)
-        end
+    -- Minimize button → collapses window, shows bubble
+    local minBtn = new("TextButton",{
+        Size=UDim2.new(0,28,0,28), Position=UDim2.new(1,-44,0.5,-14),
+        BackgroundColor3=T.BG3, Text="─",
+        TextColor3=T.TextDim, TextSize=11, Font=T.FontBold,
+        BorderSizePixel=0, ZIndex=4,
+    }, topbar)
+    corner(minBtn, UDim.new(0,5))
+    minBtn.MouseEnter:Connect(function() tw(minBtn,{BackgroundColor3=T.BG2}) end)
+    minBtn.MouseLeave:Connect(function() tw(minBtn,{BackgroundColor3=T.BG3}) end)
+    minBtn.MouseButton1Click:Connect(function()
+        minimized=true
+        fullSz=win.Size
+        tw(win,{Size=UDim2.new(0,WIN_W,0,0)}, .22, Enum.EasingStyle.Quad)
+        task.delay(.24, function()
+            win.Visible=false
+            bubble.Visible=true
+            -- little pop-in on bubble
+            bubble.Size=UDim2.new(0,0,0,0)
+            bubble.Position=UDim2.new(1,-18,0,8)
+            tw(bubble,{Size=UDim2.new(0,36,0,36), Position=UDim2.new(1,-46,0,8)},
+                .3, Enum.EasingStyle.Back)
+        end)
     end)
 
     -- drag
@@ -398,28 +435,29 @@ function Nova:MakeWindow(opts)
         if not gp and i.KeyCode==toggleKey then win.Visible=not win.Visible end
     end))
 
-    -- ── SIDEBAR  (120px, compact) ─────────────────
+    -- ── SIDEBAR ───────────────────────────────────
+    -- No bottom player-name footer — sidebar goes full height under topbar
     local tabBar = new("Frame",{
-        Size=UDim2.new(0,118,1,-42), Position=UDim2.new(0,0,0,42),
+        Size=UDim2.new(0,TAB_W,1,-TOP_H), Position=UDim2.new(0,0,0,TOP_H),
         BackgroundColor3=T.TabBar, BorderSizePixel=0,
     }, win)
     listLayout(tabBar, Enum.FillDirection.Vertical, 2)
     pad(tabBar,6,6,5,5)
 
-    -- separator line
+    -- separator
     new("Frame",{
-        Size=UDim2.new(0,1,1,-42), Position=UDim2.new(0,118,0,42),
+        Size=UDim2.new(0,1,1,-TOP_H), Position=UDim2.new(0,TAB_W,0,TOP_H),
         BackgroundColor3=T.Divider, BorderSizePixel=0,
     }, win)
 
     local contentArea = new("Frame",{
-        Size=UDim2.new(1,-119,1,-42), Position=UDim2.new(0,119,0,42),
+        Size=UDim2.new(1,-(TAB_W+1),1,-TOP_H), Position=UDim2.new(0,TAB_W+1,0,TOP_H),
         BackgroundTransparency=1, ClipsDescendants=true,
     }, win)
 
-    -- entrance animation
-    win.Size = UDim2.new(0,480,0,0)
-    tw(win,{Size=UDim2.new(0,480,0,400)}, .38, Enum.EasingStyle.Back)
+    -- entrance
+    win.Size = UDim2.new(0,WIN_W,0,0)
+    tw(win,{Size=UDim2.new(0,WIN_W,0,WIN_H)}, .38, Enum.EasingStyle.Back)
 
     -- ════════════════════════════════════════════
     --  WINDOW OBJECT
@@ -467,15 +505,13 @@ function Nova:MakeWindow(opts)
         local name = opts.Name or "Tab"
         local icon = opts.Icon or ""
 
-        -- sidebar tab button
         local btn = new("TextButton",{
-            Size=UDim2.new(1,0,0,30), BackgroundTransparency=1,
+            Size=UDim2.new(1,0,0,32), BackgroundTransparency=1,
             BackgroundColor3=T.TabActive, Text="",
             BorderSizePixel=0,
         }, tabBar)
         corner(btn, T.RadBtn)
 
-        -- left accent indicator (shown when active)
         local indicator = new("Frame",{
             Size=UDim2.new(0,2,0.6,0), Position=UDim2.new(0,0,0.2,0),
             BackgroundColor3=T.Accent, BorderSizePixel=0,
@@ -491,7 +527,7 @@ function Nova:MakeWindow(opts)
             new("TextLabel",{
                 Size=UDim2.new(1,-28,1,0), Position=UDim2.new(0,26,0,0),
                 BackgroundTransparency=1, Text=name,
-                TextColor3=T.TextDim, TextSize=11, Font=T.Font,
+                TextColor3=T.TextDim, TextSize=12, Font=T.Font,
                 TextXAlignment=Enum.TextXAlignment.Left
             }, btn)
         else
@@ -499,7 +535,7 @@ function Nova:MakeWindow(opts)
                 Size=UDim2.new(1,-12,1,0), Position=UDim2.new(0,10,0,0),
                 BackgroundTransparency=1,
                 Text=(icon~="" and icon.." " or "")..name,
-                TextColor3=T.TextDim, TextSize=11, Font=T.Font,
+                TextColor3=T.TextDim, TextSize=12, Font=T.Font,
                 TextXAlignment=Enum.TextXAlignment.Left
             }, btn)
         end
@@ -527,12 +563,9 @@ function Nova:MakeWindow(opts)
         self._tabs[name]=scroll; self._btns[name]=btn
         btn.MouseButton1Click:Connect(function()
             self:_select(name)
-            -- show indicator
             for n,b in pairs(self._btns) do
-                local ind = b:FindFirstChild("Frame")
-                if ind then
-                    tw(ind,{BackgroundTransparency = n==name and 0 or 1})
-                end
+                local ind = b:FindFirstChildOfClass("Frame")
+                if ind then tw(ind,{BackgroundTransparency = n==name and 0 or 1}) end
             end
         end)
         if not self._active then
@@ -575,7 +608,6 @@ function Nova:MakeWindow(opts)
             }, target())
             corner(hdr, T.RadElem)
 
-            -- micro accent left bar
             local sbar = new("Frame",{
                 Size=UDim2.new(0,2,0.65,0), Position=UDim2.new(0,0,0.175,0),
                 BackgroundColor3=T.Accent, BorderSizePixel=0,
@@ -665,27 +697,18 @@ function Nova:MakeWindow(opts)
             local cb   = (type(opts)=="table" and opts.Callback) or function() end
 
             local f = baseElem(36, T.AccentDark)
-            -- subtle gradient on button
-            addGradient(f,
-                Color3.fromRGB(52,34,118),
-                Color3.fromRGB(38,24,88), 90)
+            addGradient(f, Color3.fromRGB(52,34,118), Color3.fromRGB(38,24,88), 90)
 
             local b = new("TextButton",{
                 Size=UDim2.new(1,0,1,0), BackgroundTransparency=1,
                 Text=name, TextColor3=T.Text,
                 TextSize=12, Font=T.Font,
             }, f)
-            b.MouseEnter:Connect(function()
-                tw(f,{BackgroundColor3=T.Accent})
-            end)
-            b.MouseLeave:Connect(function()
-                tw(f,{BackgroundColor3=T.AccentDark})
-            end)
+            b.MouseEnter:Connect(function() tw(f,{BackgroundColor3=T.Accent}) end)
+            b.MouseLeave:Connect(function() tw(f,{BackgroundColor3=T.AccentDark}) end)
             b.MouseButton1Click:Connect(function()
-                tw(f,{BackgroundColor3=T.AccentSoft},.05)
-                task.wait(.1)
-                tw(f,{BackgroundColor3=T.AccentDark})
-                pcall(cb)
+                tw(f,{BackgroundColor3=T.AccentSoft},.05); task.wait(.1)
+                tw(f,{BackgroundColor3=T.AccentDark}); pcall(cb)
             end)
         end
 
@@ -711,22 +734,17 @@ function Nova:MakeWindow(opts)
 
             local knob = new("Frame",{
                 Size=UDim2.new(0,14,0,14),
-                Position=val
-                    and UDim2.new(1,-17,0.5,-7)
-                    or  UDim2.new(0,3,0.5,-7),
-                BackgroundColor3=Color3.new(1,1,1),
-                BorderSizePixel=0,
+                Position=val and UDim2.new(1,-17,0.5,-7) or UDim2.new(0,3,0.5,-7),
+                BackgroundColor3=Color3.new(1,1,1), BorderSizePixel=0,
             }, back)
             corner(knob, T.RadFull)
 
             new("TextButton",{
                 Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text="",
             }, f).MouseButton1Click:Connect(function()
-                val = not val
+                val=not val
                 tw(back,{BackgroundColor3=val and T.Accent or T.ToggleOff})
-                tw(knob,{Position=val
-                    and UDim2.new(1,-17,0.5,-7)
-                    or  UDim2.new(0,3,0.5,-7)})
+                tw(knob,{Position=val and UDim2.new(1,-17,0.5,-7) or UDim2.new(0,3,0.5,-7)})
                 if flag then Nova.Flags[flag].Value=val end
                 pcall(cb,val); Window:_saveAll()
             end)
@@ -735,9 +753,7 @@ function Nova:MakeWindow(opts)
             function obj:Set(v)
                 val=v
                 tw(back,{BackgroundColor3=v and T.Accent or T.ToggleOff})
-                tw(knob,{Position=v
-                    and UDim2.new(1,-17,0.5,-7)
-                    or  UDim2.new(0,3,0.5,-7)})
+                tw(knob,{Position=v and UDim2.new(1,-17,0.5,-7) or UDim2.new(0,3,0.5,-7)})
                 self.Value=v
                 if flag then Nova.Flags[flag].Value=v end
                 pcall(cb,v)
@@ -764,8 +780,7 @@ function Nova:MakeWindow(opts)
             leftLbl(f, name, .6)
 
             local vlbl = new("TextLabel",{
-                Size=UDim2.new(0,65,0,20),
-                Position=UDim2.new(1,-74,0,4),
+                Size=UDim2.new(0,65,0,20), Position=UDim2.new(1,-74,0,4),
                 BackgroundTransparency=1,
                 Text=tostring(val)..(vname~="" and " "..vname or ""),
                 TextColor3=col, TextSize=11, Font=T.FontBold,
@@ -812,9 +827,7 @@ function Nova:MakeWindow(opts)
                 if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
             end))
             table.insert(Nova._conns, UserInputService.InputChanged:Connect(function(i)
-                if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then
-                    upd(Mouse.X)
-                end
+                if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then upd(Mouse.X) end
             end))
 
             local obj={Value=val, _save=save}
@@ -847,8 +860,8 @@ function Nova:MakeWindow(opts)
             leftLbl(f, name, .40)
 
             local dbtn = new("TextButton",{
-                Size=UDim2.new(0,140,0,24),
-                Position=UDim2.new(1,-152,0.5,-12),
+                Size=UDim2.new(0,150,0,26),
+                Position=UDim2.new(1,-162,0.5,-13),
                 BackgroundColor3=T.BG3, Text=sel.."  ▾",
                 TextColor3=T.TextSub, TextSize=11, Font=T.Font,
                 BorderSizePixel=0, ZIndex=3,
@@ -856,7 +869,7 @@ function Nova:MakeWindow(opts)
             corner(dbtn, T.RadBtn); stroke(dbtn, T.Stroke, 1)
 
             local list = new("Frame",{
-                Size=UDim2.new(0,140,0,0), BackgroundColor3=T.BG3,
+                Size=UDim2.new(0,150,0,0), BackgroundColor3=T.BG3,
                 BorderSizePixel=0, ClipsDescendants=true,
                 ZIndex=20, Visible=false,
             }, contentArea)
@@ -864,17 +877,17 @@ function Nova:MakeWindow(opts)
             listLayout(list, Enum.FillDirection.Vertical)
             pad(list,3,3,0,0)
 
-            local listH = math.min(#options,6)*24+6
+            local listH = math.min(#options,6)*26+6
 
             local function positionList()
                 local ap=dbtn.AbsolutePosition; local as=dbtn.AbsoluteSize
                 local ca=contentArea.AbsolutePosition
                 list.Position=UDim2.new(0,ap.X-ca.X,0,ap.Y-ca.Y+as.Y+3)
-                list.Size=UDim2.new(0,140,0,0)
+                list.Size=UDim2.new(0,150,0,0)
             end
 
             local function close()
-                open=false; tw(list,{Size=UDim2.new(0,140,0,0)},.14)
+                open=false; tw(list,{Size=UDim2.new(0,150,0,0)},.14)
                 task.delay(.16,function() list.Visible=false end)
             end
 
@@ -884,7 +897,7 @@ function Nova:MakeWindow(opts)
                 end
                 for _,opt in ipairs(options) do
                     local item = new("TextButton",{
-                        Size=UDim2.new(1,0,0,24), BackgroundTransparency=1,
+                        Size=UDim2.new(1,0,0,26), BackgroundTransparency=1,
                         BackgroundColor3=T.Accent,
                         Text="  "..opt,
                         TextColor3=opt==sel and T.Text or T.TextSub,
@@ -892,8 +905,7 @@ function Nova:MakeWindow(opts)
                         TextXAlignment=Enum.TextXAlignment.Left, ZIndex=21,
                     }, list)
                     item.MouseEnter:Connect(function()
-                        tw(item,{BackgroundTransparency=0})
-                        item.TextColor3=T.Text
+                        tw(item,{BackgroundTransparency=0}); item.TextColor3=T.Text
                     end)
                     item.MouseLeave:Connect(function()
                         tw(item,{BackgroundTransparency=1})
@@ -912,7 +924,7 @@ function Nova:MakeWindow(opts)
                 open=not open
                 if open then
                     positionList(); list.Visible=true
-                    tw(list,{Size=UDim2.new(0,140,0,listH)},.2,Enum.EasingStyle.Back)
+                    tw(list,{Size=UDim2.new(0,150,0,listH)},.2,Enum.EasingStyle.Back)
                 else close() end
             end)
 
@@ -921,7 +933,7 @@ function Nova:MakeWindow(opts)
             function obj:Refresh(tbl,clear)
                 if clear then options={} end
                 for _,v in ipairs(tbl) do table.insert(options,v) end
-                listH=math.min(#options,6)*24+6; buildItems()
+                listH=math.min(#options,6)*26+6; buildItems()
             end
             if flag then Nova.Flags[flag]=obj end
             return obj
@@ -941,8 +953,7 @@ function Nova:MakeWindow(opts)
             leftLbl(f, name, .65)
 
             local prev = new("Frame",{
-                Size=UDim2.new(0,24,0,24),
-                Position=UDim2.new(1,-42,0.5,-12),
+                Size=UDim2.new(0,24,0,24), Position=UDim2.new(1,-42,0.5,-12),
                 BackgroundColor3=col, BorderSizePixel=0,
             }, f)
             corner(prev, T.RadBtn); stroke(prev, T.Stroke, 1)
@@ -1026,7 +1037,7 @@ function Nova:MakeWindow(opts)
             return obj
         end
 
-        -- ── BIND (Keybind) ───────────────────────
+        -- ── BIND ────────────────────────────────
         function Tab:AddBind(opts)
             opts = opts or {}
             local name      = opts.Name     or "Keybind"
@@ -1042,8 +1053,8 @@ function Nova:MakeWindow(opts)
             leftLbl(f, name, .55)
 
             local kbtn = new("TextButton",{
-                Size=UDim2.new(0,100,0,24),
-                Position=UDim2.new(1,-110,0.5,-12),
+                Size=UDim2.new(0,110,0,26),
+                Position=UDim2.new(1,-120,0.5,-13),
                 BackgroundColor3=T.BG3,
                 Text="["..key.Name.."]",
                 TextColor3=T.Accent, TextSize=11, Font=T.FontBold,
@@ -1100,8 +1111,8 @@ function Nova:MakeWindow(opts)
             leftLbl(f, name, .36)
 
             local box = new("TextBox",{
-                Size=UDim2.new(.6,0,0,24),
-                Position=UDim2.new(.38,0,0.5,-12),
+                Size=UDim2.new(.6,0,0,26),
+                Position=UDim2.new(.38,0,0.5,-13),
                 BackgroundColor3=T.BG3, Text=default,
                 PlaceholderText="Enter value...",
                 PlaceholderColor3=T.TextMuted,
@@ -1133,15 +1144,10 @@ function Nova:MakeWindow(opts)
 end -- MakeWindow
 
 -- ════════════════════════════════════════════════
---  INIT
+--  INIT / DESTROY
 -- ════════════════════════════════════════════════
-function Nova:Init()
-    -- config loads are handled per-window via _loadFn
-end
+function Nova:Init() end
 
--- ════════════════════════════════════════════════
---  DESTROY
--- ════════════════════════════════════════════════
 function Nova:Destroy()
     for _,c in ipairs(self._conns) do pcall(function() c:Disconnect() end) end
     self._conns={}
