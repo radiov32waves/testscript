@@ -461,29 +461,27 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar: circle image frame with inward Border stroke
-    -- ApplyStrokeMode.Border draws the stroke inside the frame bounds,
-    -- so it is never clipped by ClipsDescendants ancestors.
-    local pcAv=new("Frame",{
+    -- ── Avatar: ImageLabel IS the circle element.
+    -- UICorner on an ImageLabel with a non-transparent background clips
+    -- the image content to a circle — this is the only reliable method.
+    -- UIStroke with ApplyStrokeMode.Border draws inward so it's never
+    -- clipped by ancestor ClipsDescendants frames.
+    local pcAv=new("ImageLabel",{
         Size=UDim2.new(0,30,0,30),
         Position=UDim2.new(0,0,0.5,-15),
         BackgroundColor3=T.Glass,
+        BackgroundTransparency=0,
+        Image="https://www.roblox.com/headshot-thumbnail/image?userId="
+            ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
+        ScaleType=Enum.ScaleType.Crop,
         BorderSizePixel=0,
         ZIndex=2,
-        ClipsDescendants=true,
     },pcRow)
     corner(pcAv,T.RFull)
     local avStroke=Instance.new("UIStroke",pcAv)
     avStroke.Color=isPremium and T.PremBorder or T.BorderElem
     avStroke.Thickness=isPremium and 1.8 or 1.2
     avStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-
-    local avImg=new("ImageLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,
-        Image="https://www.roblox.com/headshot-thumbnail/image?userId="
-            ..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png",
-        ZIndex=3},pcAv)
-    -- UICorner on the ImageLabel itself ensures circle clip in all executors
-    Instance.new("UICorner",avImg).CornerRadius=UDim.new(1,0)
 
     -- Crown on pcRow (outside pcAv) so it never gets clipped
     if isPremium then
