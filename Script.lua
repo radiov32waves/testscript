@@ -358,8 +358,8 @@ function Nova:MakeWindow(opts)
         minimized=false; bubble.Visible=false
         win.Visible=true; shadow.Visible=true
         tw(win,{Size=fullSz},.3,Enum.EasingStyle.Back)
-        tw(shadow,{Size=UDim2.new(fullSz.X.Scale,fullSz.X.Offset+60,
-                                  fullSz.Y.Scale,fullSz.Y.Offset+60)},.3,Enum.EasingStyle.Back)
+        tw(shadow,{Size=UDim2.new(fullSz.X.Scale,fullSz.X.Offset+80,
+                                  fullSz.Y.Scale,fullSz.Y.Offset+80)},.3,Enum.EasingStyle.Back)
     end)
 
     local function pulseBubble()
@@ -375,7 +375,7 @@ function Nova:MakeWindow(opts)
     local minBtn,minBs=ctrlBtn("─",-52,-8,T.GlassHov,function()
         minimized=true; fullSz=win.Size
         tw(win,{Size=UDim2.new(0.82,0,0,0)},.2,Enum.EasingStyle.Quad)
-        tw(shadow,{Size=UDim2.new(0.82,60,0,60)},.2,Enum.EasingStyle.Quad)
+        tw(shadow,{Size=UDim2.new(0.82,80,0,80)},.2,Enum.EasingStyle.Quad)
         task.delay(.25,function()
             win.Visible=false; shadow.Visible=false; bubble.Visible=true
             bubble.Size=UDim2.new(0,0,0,0)
@@ -467,49 +467,59 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar circle (ClipsDescendants clips UIStroke too, so we use a separate ring frame) ──
+    -- ── Avatar circle ──────────────────────────────────────────────────────────
+    -- Roblox: UICorner + ClipsDescendants clips children into a circle.
+    -- UIStroke on a clipping frame gets clipped itself, so we layer:
+    --   pcAvClip  → ClipsDescendants=true, fully transparent bg, UICorner=full → clips image
+    --   pcAv      → ImageLabel filling pcAvClip, BackgroundTransparency=1
+    --   pcAvRing  → sibling Frame, same size, NO clipping, UICorner=full, UIStroke only → visible ring
+
+    local AV_SIZE = 34  -- avatar diameter in px
+
+    -- Outer wrapper (transparent, no clipping) — holds clip + ring as siblings
     local pcAvBg = Instance.new("Frame")
-    pcAvBg.Size              = UDim2.new(0,34,0,34)   -- slightly larger than avatar for ring gap
-    pcAvBg.Position          = UDim2.new(0,-1,0.5,-17)
-    pcAvBg.BackgroundTransparency = 1
-    pcAvBg.BorderSizePixel   = 0
-    pcAvBg.ZIndex            = 2
-    pcAvBg.Parent            = pcRow
+    pcAvBg.Size                  = UDim2.new(0, AV_SIZE, 0, AV_SIZE)
+    pcAvBg.Position              = UDim2.new(0, 0, 0.5, -AV_SIZE/2)
+    pcAvBg.BackgroundTransparency= 1
+    pcAvBg.BorderSizePixel       = 0
+    pcAvBg.ZIndex                = 2
+    pcAvBg.Parent                = pcRow
 
-    -- Inner clipping frame — clips the image into a circle, no stroke here
+    -- Clipping circle — FULLY transparent bg so NO square bleed, UICorner rounds it
     local pcAvClip = Instance.new("Frame")
-    pcAvClip.Size            = UDim2.new(0,30,0,30)
-    pcAvClip.Position        = UDim2.new(0,2,0,2)
-    pcAvClip.BackgroundColor3= T.GlassDeep
-    pcAvClip.BorderSizePixel = 0
-    pcAvClip.ZIndex          = 3
-    pcAvClip.ClipsDescendants= true
-    pcAvClip.Parent          = pcAvBg
-    local _avClipC = Instance.new("UICorner", pcAvClip)
-    _avClipC.CornerRadius    = UDim.new(1,0)
+    pcAvClip.Size                = UDim2.new(1, 0, 1, 0)
+    pcAvClip.BackgroundTransparency = 1        -- must be 1 — any opaque bg leaks square corners
+    pcAvClip.BorderSizePixel     = 0
+    pcAvClip.ClipsDescendants    = true        -- this is what makes the circle crop
+    pcAvClip.ZIndex              = 3
+    pcAvClip.Parent              = pcAvBg
+    local _avClipC               = Instance.new("UICorner", pcAvClip)
+    _avClipC.CornerRadius        = UDim.new(1, 0)   -- full circle
 
-    local pcAv = Instance.new("ImageLabel")
-    pcAv.Size                = UDim2.new(1,0,1,0)
-    pcAv.BackgroundTransparency = 1
-    pcAv.Image               = "rbxthumb://type=AvatarHeadShot&id="..tostring(LocalPlayer.UserId).."&w=48&h=48"
-    pcAv.ScaleType           = Enum.ScaleType.Crop
-    pcAv.BorderSizePixel     = 0
-    pcAv.ZIndex              = 4
-    pcAv.Parent              = pcAvClip
+    -- Avatar image — fills the clip, transparent bg
+    local pcAv                   = Instance.new("ImageLabel")
+    pcAv.Size                    = UDim2.new(1, 0, 1, 0)
+    pcAv.BackgroundTransparency  = 1
+    pcAv.Image                   = "rbxthumb://type=AvatarHeadShot&id="
+                                   ..tostring(LocalPlayer.UserId).."&w=48&h=48"
+    pcAv.ScaleType               = Enum.ScaleType.Crop
+    pcAv.BorderSizePixel         = 0
+    pcAv.ZIndex                  = 4
+    pcAv.Parent                  = pcAvClip
 
-    -- Separate ring overlay (not clipping, so its border renders fully)
-    local pcAvRing = Instance.new("Frame")
-    pcAvRing.Size            = UDim2.new(1,0,1,0)
+    -- Ring overlay — sibling of pcAvClip, NO ClipsDescendants so stroke renders fully
+    local pcAvRing               = Instance.new("Frame")
+    pcAvRing.Size                = UDim2.new(1, 0, 1, 0)
     pcAvRing.BackgroundTransparency = 1
-    pcAvRing.BorderSizePixel = 0
-    pcAvRing.ZIndex          = 5
-    pcAvRing.Parent          = pcAvBg
-    local _avRingC = Instance.new("UICorner", pcAvRing)
-    _avRingC.CornerRadius    = UDim.new(1,0)
-    local _avRingS = Instance.new("UIStroke", pcAvRing)
-    _avRingS.Color           = isPremium and T.PremBorder or T.AccentSoft
-    _avRingS.Thickness       = isPremium and 2 or 1.5
-    _avRingS.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    pcAvRing.BorderSizePixel     = 0
+    pcAvRing.ZIndex              = 5           -- on top of image
+    pcAvRing.Parent              = pcAvBg
+    local _avRingC               = Instance.new("UICorner", pcAvRing)
+    _avRingC.CornerRadius        = UDim.new(1, 0)
+    local _avRingS               = Instance.new("UIStroke", pcAvRing)
+    _avRingS.Color               = isPremium and T.PremBorder or T.AccentSoft
+    _avRingS.Thickness           = isPremium and 2.5 or 2
+    _avRingS.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
 
     if isPremium then
         new("TextLabel",{Size=UDim2.new(0,14,0,14),
@@ -556,9 +566,9 @@ function Nova:MakeWindow(opts)
     end
 
     win.Size=UDim2.new(0.82,0,0,0)
-    shadow.Size=UDim2.new(0.82,60,0,60)
+    shadow.Size=UDim2.new(0.82,80,0,80)
     tw(win,{Size=UDim2.new(0.82,0,0.80,0)},.4,Enum.EasingStyle.Back)
-    tw(shadow,{Size=UDim2.new(0.82,60,0.80,60)},.4,Enum.EasingStyle.Back)
+    tw(shadow,{Size=UDim2.new(0.82,80,0.80,80)},.4,Enum.EasingStyle.Back)
 
     -- ════════════════════════════════════════════
     --  WINDOW OBJECT
