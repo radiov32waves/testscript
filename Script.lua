@@ -175,7 +175,6 @@ function Nova:MakeNotification(opts)
     local t=opts.Time or 4
     ensureHolder(self._gui or LocalPlayer.PlayerGui)
 
-    -- single flat card: one bg, one Border stroke, no sub-frames
     local card=new("Frame",{
         Size=UDim2.new(1,0,0,62),
         BackgroundColor3=Color3.fromRGB(13,11,26),
@@ -244,7 +243,6 @@ function Nova:MakeWindow(opts)
     self._gui=gui
     ensureHolder(gui)
 
-    -- Drop shadow lives on gui (not win) so ClipsDescendants on win can't eat it
     local shadow=new("ImageLabel",{
         Size=UDim2.new(0.82,60,0.80,60),
         Position=UDim2.new(0.5,0,0.5,0),
@@ -369,8 +367,6 @@ function Nova:MakeWindow(opts)
         end)
     end
 
-    -- ── FIX 1: Minimize button — moved down (-8 yOff) and left (-52 xOff)
-    -- Previously: xOff=-44, yOff=-14. Now: xOff=-52, yOff=-8
     local minBtn,minBs=ctrlBtn("─",-52,-8,T.GlassHov,function()
         minimized=true; fullSz=win.Size
         tw(win,{Size=UDim2.new(0.82,0,0,0)},.2,Enum.EasingStyle.Quad)
@@ -384,9 +380,7 @@ function Nova:MakeWindow(opts)
             pulseBubble()
         end)
     end)
-    -- Permanently override minimize border to accent-violet, thicker than default
     minBs.Color=T.AccentSoft; minBs.Thickness=1.8
-    -- Re-wire hover so it brightens from AccentSoft rather than BorderElem
     minBtn.MouseEnter:Connect(function()
         tw(minBs,{Color=T.BorderFocus,Thickness=2.2})
     end)
@@ -461,29 +455,33 @@ function Nova:MakeWindow(opts)
 
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar circle
-    -- Use rbxthumb URI (works in all executors) on an ImageLabel that is
-    -- the circle itself. UICorner on an ImageLabel with BackgroundTransparency=0
-    -- clips the rendered image to the rounded shape. UIStroke Border mode
-    -- draws inward so it cannot be clipped by ancestor ClipsDescendants.
-    local pcAv = Instance.new("ImageLabel")
-    pcAv.Size                = UDim2.new(0,32,0,32)
-    pcAv.Position            = UDim2.new(0,0,0.5,-16)
-    pcAv.BackgroundColor3    = T.Glass
-    pcAv.BackgroundTransparency = 0
-    pcAv.Image               = "rbxthumb://type=AvatarHeadShot&id="..tostring(LocalPlayer.UserId).."&w=48&h=48"
-    pcAv.ScaleType           = Enum.ScaleType.Crop
-    pcAv.BorderSizePixel     = 0
-    pcAv.ZIndex              = 2
-    pcAv.Parent              = pcRow
-    local _avC = Instance.new("UICorner", pcAv)
-    _avC.CornerRadius        = UDim.new(1,0)
-    local _avS = Instance.new("UIStroke", pcAv)
+    -- ── Avatar circle (FIXED: backing Frame clips the ImageLabel cleanly) ──
+    local pcAvBg = Instance.new("Frame")
+    pcAvBg.Size              = UDim2.new(0,32,0,32)
+    pcAvBg.Position          = UDim2.new(0,0,0.5,-16)
+    pcAvBg.BackgroundColor3  = T.GlassDeep
+    pcAvBg.BorderSizePixel   = 0
+    pcAvBg.ZIndex            = 2
+    pcAvBg.ClipsDescendants  = true
+    pcAvBg.Parent            = pcRow
+    local _avBgC = Instance.new("UICorner", pcAvBg)
+    _avBgC.CornerRadius      = UDim.new(1,0)
+    local _avS = Instance.new("UIStroke", pcAvBg)
     _avS.Color               = isPremium and T.PremBorder or T.BorderElem
     _avS.Thickness           = isPremium and 1.8 or 1.2
     _avS.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
 
-    -- Crown on pcRow (outside pcAv) so it never gets clipped
+    -- ImageLabel is a child of the clipping frame — fully transparent bg, no dark bleed
+    local pcAv = Instance.new("ImageLabel")
+    pcAv.Size                = UDim2.new(1,0,1,0)
+    pcAv.BackgroundTransparency = 1
+    pcAv.Image               = "rbxthumb://type=AvatarHeadShot&id="..tostring(LocalPlayer.UserId).."&w=48&h=48"
+    pcAv.ScaleType           = Enum.ScaleType.Crop
+    pcAv.BorderSizePixel     = 0
+    pcAv.ZIndex              = 3
+    pcAv.Parent              = pcAvBg
+
+    -- Crown on pcRow (outside pcAvBg) so it is never clipped
     if isPremium then
         new("TextLabel",{Size=UDim2.new(0,14,0,14),
             Position=UDim2.new(0,26,0,-4),
