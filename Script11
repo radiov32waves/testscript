@@ -231,7 +231,7 @@ end
 -- ════════════════════════════════════════════════
 --  MAKE WINDOW
 --  iPhone 16 Pro viewport ≈ 393×852 pts
---  Photo UI fills ~85% width → ~540px wide
+--  Photo UI fills ~85% width → ~668px wide, ~62% height → ~530px
 --  Height ≈ 58% of screen → ~490px  (minus footer → ~450)
 -- ════════════════════════════════════════════════
 function Nova:MakeWindow(opts)
@@ -248,11 +248,12 @@ function Nova:MakeWindow(opts)
     local toggleKey    = opts.Key           or Enum.KeyCode.RightShift
 
     -- Window dimensions matching the photo on iPhone 16 Pro
-    -- Wide (~86% of 393pt scaled) and shorter than before, no footer
-    local WIN_W = 540
-    local WIN_H = 450  -- reduced from photo since we removed footer area
-    local TOP_H = 48   -- topbar height (photo has a tall header)
-    local TAB_W = 128  -- sidebar width (photo sidebar is ~25% of width)
+    -- Photo: UI is ~85% of screen width, ~62% of screen height
+    -- Roblox mobile viewport at iPhone 16 Pro ≈ 786×852 game px
+    local WIN_W = 668
+    local WIN_H = 530  -- removed footer so slightly less than photo height
+    local TOP_H = 52   -- topbar height (photo has a tall header)
+    local TAB_W = 158  -- sidebar width (photo sidebar is ~24% of width)
 
     if saveConfig then safeMkdir(cfgFolder) end
 
