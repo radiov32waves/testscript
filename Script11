@@ -250,7 +250,7 @@ function Nova:MakeWindow(opts)
     -- Window dimensions matching the photo on iPhone 16 Pro
     -- Photo: UI is ~85% of screen width, ~62% of screen height
     -- Roblox mobile viewport at iPhone 16 Pro ≈ 786×852 game px
-    local WIN_W = 668
+    local WIN_W = 668 -- pixel fallback (unused - scale used below)
     local WIN_H = 530  -- removed footer so slightly less than photo height
     local TOP_H = 52   -- topbar height (photo has a tall header)
     local TAB_W = 158  -- sidebar width (photo sidebar is ~24% of width)
@@ -267,9 +267,12 @@ function Nova:MakeWindow(opts)
     if introEnabled then playIntro(gui, introText, introIcon) end
 
     -- ── WINDOW FRAME ─────────────────────────────
+    -- Scale-based: matches photo on any screen size
+    -- Photo shows window ~75% wide, ~78% tall, centered slightly right
     local win = new("Frame",{
-        Size=UDim2.new(0,WIN_W,0,WIN_H),
-        Position=UDim2.new(0.5,-WIN_W/2,0.5,-WIN_H/2),
+        Size=UDim2.new(0.78,0,0.78,0),
+        Position=UDim2.new(0.5,0,0.5,0),
+        AnchorPoint=Vector2.new(0.5,0.5),
         BackgroundColor3=T.BG, BorderSizePixel=0, ClipsDescendants=true,
     }, gui)
     corner(win, T.RadMain)
@@ -349,7 +352,7 @@ function Nova:MakeWindow(opts)
     -- ── WINDOW CONTROL BUTTONS ────────────────────
     -- Minimize button: on click, window hides and a small circle appears top-right
     local minimized = false
-    local fullSz    = UDim2.new(0,WIN_W,0,WIN_H)
+    local fullSz    = UDim2.new(0.78,0,0.78,0)
 
     -- The floating restore bubble (hidden by default)
     local bubble = new("TextButton",{
@@ -386,7 +389,7 @@ function Nova:MakeWindow(opts)
     closeBtn.MouseButton1Click:Connect(function()
         if closeCb then pcall(closeCb) end
         bubble.Visible=false
-        tw(win,{Size=UDim2.new(0,WIN_W,0,0), Position=UDim2.new(0.5,-WIN_W/2,0.5,0)},
+        tw(win,{Size=UDim2.new(0.78,0,0,0), Position=UDim2.new(0.5,0,0.5,0)},
             .28, Enum.EasingStyle.Back, Enum.EasingDirection.In)
         task.delay(.35, function() gui:Destroy() end)
     end)
@@ -404,7 +407,7 @@ function Nova:MakeWindow(opts)
     minBtn.MouseButton1Click:Connect(function()
         minimized=true
         fullSz=win.Size
-        tw(win,{Size=UDim2.new(0,WIN_W,0,0)}, .22, Enum.EasingStyle.Quad)
+        tw(win,{Size=UDim2.new(0.78,0,0,0)}, .22, Enum.EasingStyle.Quad)
         task.delay(.24, function()
             win.Visible=false
             bubble.Visible=true
@@ -457,8 +460,8 @@ function Nova:MakeWindow(opts)
     }, win)
 
     -- entrance
-    win.Size = UDim2.new(0,WIN_W,0,0)
-    tw(win,{Size=UDim2.new(0,WIN_W,0,WIN_H)}, .38, Enum.EasingStyle.Back)
+    win.Size = UDim2.new(0.78,0,0,0)
+    tw(win,{Size=UDim2.new(0.78,0,0.78,0)}, .38, Enum.EasingStyle.Back)
 
     -- ════════════════════════════════════════════
     --  WINDOW OBJECT
