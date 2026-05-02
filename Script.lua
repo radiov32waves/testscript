@@ -29,61 +29,48 @@ local function safeMkdir(p)   pcall(makefolder,p) end
 
 -- ════════════════════════════════════════════════════════════
 --  LIQUID GLASS THEME
---  Philosophy: dark base + semi-transparent glass surfaces
---  + coloured borders that catch light + violet accent glow
 -- ════════════════════════════════════════════════════════════
 local T = {
-    -- ── Window chrome ────────────────────────────────────────
-    Win         = Color3.fromRGB( 9,  8, 17),   -- near-black base
+    Win         = Color3.fromRGB( 9,  8, 17),
     TopBar      = Color3.fromRGB(14, 12, 24),
     Sidebar     = Color3.fromRGB(12, 10, 21),
     Content     = Color3.fromRGB( 7,  6, 14),
 
-    -- ── Glass surfaces (elements, cards) ─────────────────────
-    -- Glass = slightly lighter than bg + frosted feel via stroke
-    Glass       = Color3.fromRGB(18, 15, 32),   -- element bg
-    GlassHov    = Color3.fromRGB(24, 20, 42),   -- hovered element
-    GlassDeep   = Color3.fromRGB(12, 10, 22),   -- inset (input bg)
-    GlassCard   = Color3.fromRGB(15, 13, 27),   -- section cards
+    Glass       = Color3.fromRGB(18, 15, 32),
+    GlassHov    = Color3.fromRGB(24, 20, 42),
+    GlassDeep   = Color3.fromRGB(12, 10, 22),
+    GlassCard   = Color3.fromRGB(15, 13, 27),
 
-    -- ── Glass borders — the "liquid glass" effect ─────────────
-    -- Each border has a faint colour tint so it glows like glass
-    BorderWin   = Color3.fromRGB( 55, 40, 105), -- window outer
-    BorderElem  = Color3.fromRGB( 38, 28,  72), -- element resting
-    BorderHov   = Color3.fromRGB( 85, 58, 165), -- element hovered
-    BorderFocus = Color3.fromRGB(120, 80, 255), -- focused / active
-    BorderBtn   = Color3.fromRGB( 65, 42, 140), -- button resting
-    BorderBtnHv = Color3.fromRGB(110, 72, 235), -- button hovered
-    BorderSec   = Color3.fromRGB( 30, 22,  58), -- section/card
-    BorderCard  = Color3.fromRGB( 42, 30,  82), -- notification card
+    BorderWin   = Color3.fromRGB( 55, 40, 105),
+    BorderElem  = Color3.fromRGB( 38, 28,  72),
+    BorderHov   = Color3.fromRGB( 85, 58, 165),
+    BorderFocus = Color3.fromRGB(120, 80, 255),
+    BorderBtn   = Color3.fromRGB( 65, 42, 140),
+    BorderBtnHv = Color3.fromRGB(110, 72, 235),
+    BorderSec   = Color3.fromRGB( 30, 22,  58),
+    BorderCard  = Color3.fromRGB( 42, 30,  82),
 
-    -- ── Accent ───────────────────────────────────────────────
     Accent      = Color3.fromRGB(115, 72, 250),
     AccentSoft  = Color3.fromRGB(145,105, 255),
     AccentDark  = Color3.fromRGB( 50, 28, 115),
     AccentGlow  = Color3.fromRGB( 78, 40, 185),
-    AccentBtn0  = Color3.fromRGB( 62, 34, 145), -- button gradient top
-    AccentBtn1  = Color3.fromRGB( 30, 16,  78), -- button gradient bot
+    AccentBtn0  = Color3.fromRGB( 62, 34, 145),
+    AccentBtn1  = Color3.fromRGB( 30, 16,  78),
 
-    -- ── Tab active ───────────────────────────────────────────
     TabAct0     = Color3.fromRGB( 82, 50, 210),
     TabAct1     = Color3.fromRGB( 38, 20, 115),
 
-    -- ── Text ─────────────────────────────────────────────────
     Text        = Color3.fromRGB(228, 222, 252),
     TextSub     = Color3.fromRGB(165, 152, 208),
     TextDim     = Color3.fromRGB(105,  92, 148),
     TextMuted   = Color3.fromRGB( 58,  48,  92),
 
-    -- ── State ────────────────────────────────────────────────
     Success     = Color3.fromRGB( 68, 215, 135),
     Danger      = Color3.fromRGB(228,  68,  68),
     Warning     = Color3.fromRGB(238, 188,  58),
 
-    -- ── Toggle ───────────────────────────────────────────────
     ToggleOff   = Color3.fromRGB( 24, 18,  44),
 
-    -- ── Premium badge ────────────────────────────────────────
     PremBg      = Color3.fromRGB( 52, 28, 138),
     PremBorder  = Color3.fromRGB(148,100, 255),
     PremText    = Color3.fromRGB(218, 196, 255),
@@ -91,12 +78,10 @@ local T = {
     FreeBorder  = Color3.fromRGB( 42, 32,  72),
     FreeText    = Color3.fromRGB( 95,  82, 138),
 
-    -- ── Typography ───────────────────────────────────────────
     Font        = Enum.Font.GothamSemibold,
     FontLight   = Enum.Font.Gotham,
     FontBold    = Enum.Font.GothamBold,
 
-    -- ── Radii ────────────────────────────────────────────────
     R10  = UDim.new(0,10),
     R9   = UDim.new(0, 9),
     R8   = UDim.new(0, 8),
@@ -118,7 +103,6 @@ local function corner(p,r)
     local c=Instance.new("UICorner",p); c.CornerRadius=r or T.R8; return c
 end
 
--- Glass border: creates a UIStroke that mimics light catching glass
 local function glassBorder(p, col, thick)
     local s=Instance.new("UIStroke",p)
     s.Color=col or T.BorderElem
@@ -144,13 +128,11 @@ local function vlist(p,spacing)
         Padding=UDim.new(0,spacing or 0),SortOrder=Enum.SortOrder.LayoutOrder},p)
 end
 
--- Gradient: liquid glass shimmer
 local function grad(p,c0,c1,rot)
     local g=Instance.new("UIGradient",p)
     g.Color=ColorSequence.new(c0,c1); g.Rotation=rot or 90; return g
 end
 
--- Top shimmer line — the key "liquid glass" highlight
 local function shimmerLine(parent, alpha)
     local s=new("Frame",{
         Size=UDim2.new(0.55,0,0,1),
@@ -172,7 +154,7 @@ Nova._conns  = {}
 Nova._gui    = nil
 
 -- ────────────────────────────────────────────────────────────
---  NOTIFICATION  (liquid glass card)
+--  NOTIFICATION
 -- ────────────────────────────────────────────────────────────
 local _nh
 
@@ -193,15 +175,12 @@ function Nova:MakeNotification(opts)
     local t=opts.Time or 4
     ensureHolder(self._gui or LocalPlayer.PlayerGui)
 
-    -- Glass card
     local card=new("Frame",{Size=UDim2.new(1,0,0,66),
         BackgroundColor3=Color3.fromRGB(16,13,30),
         BorderSizePixel=0,ClipsDescendants=true,ZIndex=101},_nh)
     corner(card,T.R9)
     glassBorder(card,T.BorderCard,1.2)
-    -- glass shimmer on top
     shimmerLine(card,0.6)
-    -- left accent bar (gradient)
     local ab=new("Frame",{Size=UDim2.new(0,2,1,0),
         BackgroundColor3=T.Accent,BorderSizePixel=0,ZIndex=102},card)
     grad(ab,T.AccentSoft,T.AccentGlow,90)
@@ -210,7 +189,8 @@ function Nova:MakeNotification(opts)
     if img~="" then
         local ic=new("Frame",{Size=UDim2.new(0,32,0,32),
             Position=UDim2.new(0,12,0.5,-16),
-            BackgroundColor3=T.AccentDark,BorderSizePixel=0,ZIndex=102},card)
+            BackgroundColor3=T.AccentDark,BorderSizePixel=0,ZIndex=102,
+            ClipsDescendants=true},card)
         corner(ic,T.RFull)
         glassBorder(ic,T.BorderBtn,1)
         new("ImageLabel",{Size=UDim2.new(1,0,1,0),
@@ -254,14 +234,11 @@ function Nova:MakeWindow(opts)
 
     if saveConfig then safeMkdir(cfgFolder) end
 
-    -- ── GUI ──────────────────────────────────────
     local gui=new("ScreenGui",{Name="NovaUI",ResetOnSpawn=false,
         ZIndexBehavior=Enum.ZIndexBehavior.Sibling},LocalPlayer.PlayerGui)
     self._gui=gui
     ensureHolder(gui)
 
-    -- ── WINDOW ───────────────────────────────────
-    -- Liquid glass: deep bg + layered glass border
     local win=new("Frame",{
         Size=UDim2.new(0.82,0,0.80,0),
         Position=UDim2.new(0.5,0,0.5,0),
@@ -269,11 +246,8 @@ function Nova:MakeWindow(opts)
         BackgroundColor3=T.Win,BorderSizePixel=0,
         ClipsDescendants=true},gui)
     corner(win,T.R10)
-
-    -- Outer glow border (two-layer effect)
     glassBorder(win,T.BorderWin,1.5)
 
-    -- Drop shadow
     new("ImageLabel",{Size=UDim2.new(1,60,1,60),Position=UDim2.new(0,-30,0,-30),
         BackgroundTransparency=1,Image="rbxassetid://6014261993",
         ImageColor3=Color3.new(0,0,0),ImageTransparency=.5,
@@ -286,15 +260,12 @@ function Nova:MakeWindow(opts)
     new("Frame",{Size=UDim2.new(1,0,0,14),Position=UDim2.new(0,0,1,-14),
         BackgroundColor3=T.TopBar,BorderSizePixel=0,ZIndex=2},topbar)
 
-    -- Top bar glass shimmer (liquid glass highlight across top)
     shimmerLine(topbar,0.68)
 
-    -- Accent sweep line
     local acLine=new("Frame",{Size=UDim2.new(0,0,0,1),Position=UDim2.new(0,0,1,-1),
         BackgroundColor3=T.Accent,BorderSizePixel=0,ZIndex=3},topbar)
     tw(acLine,{Size=UDim2.new(1,0,0,1)},.75,Enum.EasingStyle.Quad)
 
-    -- Icon / dot
     if winIcon~="" then
         new("ImageLabel",{Size=UDim2.new(0,26,0,26),Position=UDim2.new(0,12,0.5,-13),
             BackgroundTransparency=1,Image=winIcon,ZIndex=3},topbar)
@@ -319,7 +290,7 @@ function Nova:MakeWindow(opts)
         TextColor3=T.TextMuted,TextSize=9,Font=T.FontLight,
         TextXAlignment=Enum.TextXAlignment.Right,ZIndex=3},topbar)
 
-    -- ── TOPBAR CONTROL BUTTONS (glass style) ─────
+    -- ── TOPBAR CONTROL BUTTONS ────────────────────
     local function ctrlBtn(text,xOff,hCol,cb)
         local b=new("TextButton",{
             Size=UDim2.new(0,28,0,28),Position=UDim2.new(1,xOff,0.5,-14),
@@ -347,10 +318,12 @@ function Nova:MakeWindow(opts)
     local fullSz=UDim2.new(0.82,0,0.80,0)
 
     -- ── FLOATING RESTORE BUBBLE ──────────────────
+    -- FIX: ClipsDescendants=true so hamburger bars don't bleed outside the rounded bubble
     local bubble=new("Frame",{Size=UDim2.new(0,42,0,42),
         Position=UDim2.new(1,-52,0,8),
         BackgroundColor3=Color3.fromRGB(16,12,34),
-        BorderSizePixel=0,ZIndex=200,Visible=false},gui)
+        BorderSizePixel=0,ZIndex=200,Visible=false,
+        ClipsDescendants=true},gui)
     corner(bubble,UDim.new(0,12))
     grad(bubble,Color3.fromRGB(68,40,182),Color3.fromRGB(16,10,38),135)
     local bubStroke=glassBorder(bubble,T.Accent,1.4)
@@ -389,7 +362,8 @@ function Nova:MakeWindow(opts)
         end)
     end
 
-    ctrlBtn("─",-44,T.GlassHov,function()
+    -- FIX: capture return value so we can override the minimize button's border
+    local minBtn=ctrlBtn("─",-44,T.GlassHov,function()
         minimized=true; fullSz=win.Size
         tw(win,{Size=UDim2.new(0.82,0,0,0)},.2,Enum.EasingStyle.Quad)
         task.delay(.25,function()
@@ -401,6 +375,12 @@ function Nova:MakeWindow(opts)
             pulseBubble()
         end)
     end)
+
+    -- FIX: make the minimize button border more visible (accent-tinted, thicker)
+    do
+        local s=minBtn:FindFirstChildOfClass("UIStroke")
+        if s then s.Color=T.AccentSoft; s.Thickness=1.6 end
+    end
 
     -- Drag
     local _dg,_ds,_ws=false,nil,nil
@@ -442,20 +422,17 @@ function Nova:MakeWindow(opts)
     vlist(tabBar,2)
     pad(tabBar,10,4,8,8)
 
-    -- Sidebar divider (subtle violet gradient)
     local sdiv=new("Frame",{
         Size=UDim2.new(0,1,1,-TOP_H),Position=UDim2.new(0,TAB_W,0,TOP_H),
         BackgroundColor3=Color3.fromRGB(40,30,76),BorderSizePixel=0},win)
     grad(sdiv,Color3.fromRGB(60,42,110),Color3.fromRGB(28,20,55),90)
 
-    -- Content area
     local contentArea=new("Frame",{
         Size=UDim2.new(1,-(TAB_W+1),1,-TOP_H),
         Position=UDim2.new(0,TAB_W+1,0,TOP_H),
         BackgroundColor3=T.Content,ClipsDescendants=true},win)
 
     -- ── PLAYER CARD ──────────────────────────────
-    -- Card divider
     new("Frame",{Size=UDim2.new(0,TAB_W,0,1),Position=UDim2.new(0,0,1,-CARD_H),
         BackgroundColor3=Color3.fromRGB(40,30,76),BorderSizePixel=0},win)
 
@@ -466,14 +443,14 @@ function Nova:MakeWindow(opts)
     pad(pcCard,9,9,10,8)
     vlist(pcCard,6)
 
-    -- Avatar row
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
+    -- FIX: ClipsDescendants=true so the avatar image is masked by the circle
     local pcAv=new("Frame",{Size=UDim2.new(0,30,0,30),
         Position=UDim2.new(0,0,0.5,-15),
-        BackgroundColor3=T.Glass,BorderSizePixel=0,ZIndex=2},pcRow)
+        BackgroundColor3=T.Glass,BorderSizePixel=0,ZIndex=2,
+        ClipsDescendants=true},pcRow)
     corner(pcAv,T.RFull)
-    -- Avatar border: premium = gold-violet glow, free = dim
     local avStroke=glassBorder(pcAv,
         isPremium and T.PremBorder or T.BorderElem,
         isPremium and 1.8 or 1.2)
@@ -484,12 +461,13 @@ function Nova:MakeWindow(opts)
         ZIndex=3},pcAv)
     corner(new("Frame",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1},pcAv),T.RFull)
 
-    -- Premium crown overlay on avatar
+    -- FIX: crown lives on pcRow (outside pcAv) so it overflows the avatar correctly
+    -- without being clipped by ClipsDescendants on pcAv
     if isPremium then
         new("TextLabel",{Size=UDim2.new(0,14,0,14),
-            Position=UDim2.new(1,-4,0,-4),
+            Position=UDim2.new(0,26,0,-4),
             BackgroundTransparency=1,Text="👑",TextSize=10,
-            Font=T.FontBold,ZIndex=5},pcAv)
+            Font=T.FontBold,ZIndex=5},pcRow)
     end
 
     local pcNames=new("Frame",{Size=UDim2.new(1,-38,1,0),
@@ -509,7 +487,6 @@ function Nova:MakeWindow(opts)
         TextXAlignment=Enum.TextXAlignment.Left,
         TextTruncate=Enum.TextTruncate.AtEnd},pcNames)
 
-    -- Premium / Free badge (only if HidePremium is not true)
     if hidePremium ~= true then
         local badgeBg=new("Frame",{
             Size=UDim2.new(0,isPremium and 82 or 46,0,18),
@@ -520,7 +497,6 @@ function Nova:MakeWindow(opts)
         shimmerLine(badgeBg,isPremium and 0.5 or 0.8)
 
         if isPremium then
-            -- Shimmer gradient on premium badge
             grad(badgeBg,Color3.fromRGB(88,46,218),Color3.fromRGB(52,26,148),90)
         end
 
@@ -531,7 +507,6 @@ function Nova:MakeWindow(opts)
             TextXAlignment=Enum.TextXAlignment.Center,ZIndex=2},badgeBg)
     end
 
-    -- Entrance animation
     win.Size=UDim2.new(0.82,0,0,0)
     tw(win,{Size=UDim2.new(0.82,0,0.80,0)},.4,Enum.EasingStyle.Back)
 
@@ -593,7 +568,6 @@ function Nova:MakeWindow(opts)
         local icon=opts.Icon or ""
         local premOnly=opts.PremiumOnly or false
 
-        -- Tab button (glass card)
         local btn=new("TextButton",{Size=UDim2.new(1,0,0,36),
             BackgroundTransparency=1,
             BackgroundColor3=Color3.fromRGB(26,16,56),
@@ -602,22 +576,18 @@ function Nova:MakeWindow(opts)
         glassBorder(btn,T.BorderElem,1)
         shimmerLine(btn,0.78)
 
-        -- Active gradient fill (Workly style)
         local gf=new("Frame",{Name="_grad",Size=UDim2.new(1,0,1,0),
             BackgroundColor3=T.TabAct0,BorderSizePixel=0,Visible=false,ZIndex=0},btn)
         corner(gf,T.R6)
         grad(gf,T.TabAct0,T.TabAct1,90)
-        -- shimmer on active gradient
         shimmerLine(gf,0.55)
 
-        -- Left accent bar
         local bar=new("Frame",{Name="_bar",Size=UDim2.new(0,3,0.55,0),
             Position=UDim2.new(0,-1,0.225,0),
             BackgroundColor3=T.AccentSoft,BorderSizePixel=0,
             BackgroundTransparency=1,ZIndex=3},btn)
         corner(bar,T.RFull)
 
-        -- Icon + label
         local hasImg=icon~="" and icon:find("rbxassetid")
         if hasImg then
             new("ImageLabel",{Size=UDim2.new(0,16,0,16),
@@ -632,7 +602,6 @@ function Nova:MakeWindow(opts)
             TextColor3=T.TextDim,TextSize=13,Font=T.Font,
             TextXAlignment=Enum.TextXAlignment.Left,ZIndex=2},btn)
 
-        -- Premium lock
         if premOnly and not isPremium then
             local lo=new("TextButton",{Size=UDim2.new(1,0,1,0),
                 BackgroundColor3=T.Sidebar,BackgroundTransparency=.35,
@@ -683,7 +652,6 @@ function Nova:MakeWindow(opts)
 
         local function target() return Tab._override or scroll end
 
-        -- Glass element base
         local function glassElem(h,bg)
             local f=new("Frame",{Size=UDim2.new(1,0,0,h or 40),
                 BackgroundColor3=bg or T.Glass,BorderSizePixel=0},target())
@@ -704,7 +672,6 @@ function Nova:MakeWindow(opts)
         function Tab:AddSection(opts)
             local name=type(opts)=="string" and opts or (opts and opts.Name or "Section")
 
-            -- Section header: transparent with accent tick + caps label
             local hdr=new("Frame",{Size=UDim2.new(1,0,0,24),
                 BackgroundTransparency=1,BorderSizePixel=0},target())
 
@@ -779,7 +746,6 @@ function Nova:MakeWindow(opts)
         end
 
         -- ── BUTTON ───────────────────────────────
-        -- Full liquid glass treatment: gradient + border + top shimmer + click flash
         function Tab:AddButton(opts)
             local name=type(opts)=="string" and opts or (opts and opts.Name or "Button")
             local cb=(type(opts)=="table" and opts.Callback) or function()end
@@ -789,10 +755,7 @@ function Nova:MakeWindow(opts)
             corner(f,T.R8)
             grad(f,T.AccentBtn0,T.AccentBtn1,90)
 
-            -- Premium glass border on buttons (brighter than element border)
             local bs=glassBorder(f,T.BorderBtn,1.2)
-
-            -- Top glass shimmer highlight
             local sh=shimmerLine(f,0.48)
 
             local b=new("TextButton",{Size=UDim2.new(1,0,1,0),
@@ -832,20 +795,18 @@ function Nova:MakeWindow(opts)
             local cb=opts.Callback or function()end
 
             local f=glassElem(40)
-            -- elem border brightens when on
             local fbs=f:FindFirstChildOfClass("UIStroke")
             lblLeft(f,name)
 
-            -- Track
             local track=new("Frame",{Size=UDim2.new(0,44,0,24),
                 Position=UDim2.new(1,-54,0.5,-12),
                 BackgroundColor3=val and T.Accent or T.ToggleOff,
-                BorderSizePixel=0},f)
+                BorderSizePixel=0,
+                ClipsDescendants=true},f)  -- FIX: clip knob at track edges
             corner(track,T.RFull)
             local tbs=glassBorder(track,val and T.BorderFocus or T.BorderElem,1.2)
             shimmerLine(track,val and 0.45 or 0.8)
 
-            -- Knob
             local knob=new("Frame",{Size=UDim2.new(0,18,0,18),
                 Position=val and UDim2.new(1,-21,0.5,-9) or UDim2.new(0,3,0.5,-9),
                 BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0},track)
@@ -900,17 +861,16 @@ function Nova:MakeWindow(opts)
                 TextColor3=col,TextSize=11,Font=T.FontBold,
                 TextXAlignment=Enum.TextXAlignment.Right},f)
 
-            -- Track (glass inset)
             local track=new("Frame",{Size=UDim2.new(1,-22,0,5),
                 Position=UDim2.new(0,11,0,38),
-                BackgroundColor3=T.ToggleOff,BorderSizePixel=0},f)
+                BackgroundColor3=T.ToggleOff,BorderSizePixel=0,
+                ClipsDescendants=true},f)  -- FIX: clip fill/handle at track edges
             corner(track,T.RFull)
             glassBorder(track,T.BorderElem,1)
 
             local fill=new("Frame",{Size=UDim2.new((val-min)/(max-min),0,1,0),
                 BackgroundColor3=col,BorderSizePixel=0},track)
             corner(fill,T.RFull)
-            -- Fill shimmer
             shimmerLine(fill,0.5)
 
             local handle=new("Frame",{Size=UDim2.new(0,14,0,14),
@@ -990,7 +950,6 @@ function Nova:MakeWindow(opts)
                 end
             end)
 
-            -- Floating list
             local list=new("Frame",{Size=UDim2.new(0,158,0,0),
                 BackgroundColor3=Color3.fromRGB(14,11,26),
                 BorderSizePixel=0,ClipsDescendants=true,
@@ -1113,7 +1072,8 @@ function Nova:MakeWindow(opts)
                     Text=lbl,TextColor3=T.TextDim,TextSize=10,Font=T.FontBold},row)
                 local trk=new("Frame",{Size=UDim2.new(1,-46,0,4),
                     Position=UDim2.new(0,18,0.5,-2),
-                    BackgroundColor3=T.ToggleOff,BorderSizePixel=0},row)
+                    BackgroundColor3=T.ToggleOff,BorderSizePixel=0,
+                    ClipsDescendants=true},row)  -- FIX: clip fill at track edges
                 corner(trk,T.RFull)
                 glassBorder(trk,T.BorderElem,1)
                 local fl=new("Frame",{Size=UDim2.new(init/255,0,1,0),
@@ -1144,7 +1104,6 @@ function Nova:MakeWindow(opts)
             mkCh("G",g,function(v) g=v end)
             mkCh("B",b,function(v) b=v end)
 
-            -- Hex row
             local hexRow=new("Frame",{Size=UDim2.new(1,0,0,28),BackgroundTransparency=1},panel)
             new("TextLabel",{Size=UDim2.new(0,22,1,0),BackgroundTransparency=1,
                 Text="#",TextColor3=T.TextDim,TextSize=10,Font=T.FontBold},hexRow)
@@ -1312,7 +1271,6 @@ function Nova:MakeWindow(opts)
             local ibs=glassBorder(iFrame,T.BorderElem,1.5)
             shimmerLine(iFrame,0.74)
 
-            -- Left accent bar (appears on focus)
             local acBar=new("Frame",{Size=UDim2.new(0,2,.55,0),
                 Position=UDim2.new(0,0,.225,0),
                 BackgroundColor3=T.Accent,BorderSizePixel=0,
@@ -1399,10 +1357,10 @@ function Nova:MakeWindow(opts)
             pad(card,16,16,14,14)
             vlist(card,10)
 
-            -- Title
             local titleRow=new("Frame",{Size=UDim2.new(1,0,0,28),BackgroundTransparency=1},card)
             local ic=new("Frame",{Size=UDim2.new(0,28,0,28),
-                BackgroundColor3=T.AccentDark,BorderSizePixel=0},titleRow)
+                BackgroundColor3=T.AccentDark,BorderSizePixel=0,
+                ClipsDescendants=true},titleRow)  -- FIX: clip icon image to circle
             corner(ic,T.RFull)
             grad(ic,Color3.fromRGB(90,48,215),Color3.fromRGB(48,26,130),135)
             glassBorder(ic,T.BorderBtn,1)
