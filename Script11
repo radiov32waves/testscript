@@ -288,14 +288,13 @@ function Nova:MakeWindow(opts)
 
     -- ── TOP BAR  (matches photo: player avatar + name left, controls right) ──
     local topbar = new("Frame",{
-        Size=UDim2.new(1,0,0,TOP_H), BackgroundColor3=T.TopBar,
+        Size=UDim2.new(1,0,0,TOP_H), BackgroundColor3=Color3.fromRGB(13,11,22),
         BorderSizePixel=0, ZIndex=2,
     }, win)
     corner(topbar, T.RadMain)
-    -- fill bottom rounded corners
     new("Frame",{
         Size=UDim2.new(1,0,0,14), Position=UDim2.new(0,0,1,-14),
-        BackgroundColor3=T.TopBar, BorderSizePixel=0, ZIndex=2
+        BackgroundColor3=Color3.fromRGB(13,11,22), BorderSizePixel=0, ZIndex=2
     }, topbar)
 
     -- animated accent line
@@ -354,22 +353,71 @@ function Nova:MakeWindow(opts)
     local minimized = false
     local fullSz    = UDim2.new(0.78,0,0.78,0)
 
-    -- The floating restore bubble (hidden by default)
-    local bubble = new("TextButton",{
-        Size=UDim2.new(0,36,0,36),
-        Position=UDim2.new(1,-46,0,8),   -- top-right corner of screen
-        BackgroundColor3=T.Accent,
-        Text="◈", TextColor3=Color3.new(1,1,1),
-        TextSize=14, Font=T.FontBold,
+    -- ── Premium floating restore button ─────────────
+    -- A small frosted-glass rounded square, top-right corner
+    local bubble = new("Frame",{
+        Size=UDim2.new(0,38,0,38),
+        Position=UDim2.new(1,-48,0,8),
+        BackgroundColor3=Color3.fromRGB(18,14,36),
         BorderSizePixel=0, ZIndex=200,
         Visible=false,
     }, gui)
-    corner(bubble, T.RadFull)
-    stroke(bubble, T.AccentSoft, 1.5)
-    -- subtle pulse gradient
-    addGradient(bubble, Color3.fromRGB(140,100,255), Color3.fromRGB(80,40,200), 135)
+    corner(bubble, UDim.new(0,11))
 
-    bubble.MouseButton1Click:Connect(function()
+    -- outer glow stroke that pulses
+    local bubbleStroke = Instance.new("UIStroke", bubble)
+    bubbleStroke.Color = T.Accent
+    bubbleStroke.Thickness = 1.2
+    bubbleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    -- rich gradient fill
+    local bubbleGrad = Instance.new("UIGradient", bubble)
+    bubbleGrad.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(72,44,188)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(40,24,110)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(18,12,40)),
+    }
+    bubbleGrad.Rotation = 135
+
+    -- N logo mark (two stacked horizontal bars like a menu icon → premium feel)
+    local function mkBar(yOff)
+        local b = new("Frame",{
+            Size=UDim2.new(0,16,0,2),
+            Position=UDim2.new(0.5,-8,0.5,yOff),
+            BackgroundColor3=Color3.new(1,1,1),
+            BorderSizePixel=0, ZIndex=202,
+        }, bubble)
+        corner(b, T.RadFull)
+        return b
+    end
+    mkBar(-5); mkBar(0); mkBar(5)
+
+    -- hover glow
+    local bubbleBtn = new("TextButton",{
+        Size=UDim2.new(1,0,1,0), BackgroundTransparency=1,
+        Text="", ZIndex=203,
+    }, bubble)
+    bubbleBtn.MouseEnter:Connect(function()
+        tw(bubble,{BackgroundColor3=Color3.fromRGB(28,18,58)})
+        tw(bubbleStroke,{Color=T.AccentSoft, Thickness=1.8})
+    end)
+    bubbleBtn.MouseLeave:Connect(function()
+        tw(bubble,{BackgroundColor3=Color3.fromRGB(18,14,36)})
+        tw(bubbleStroke,{Color=T.Accent, Thickness=1.2})
+    end)
+
+    -- pulsing glow loop
+    local function pulseBubble()
+        if not bubble.Visible then return end
+        tw(bubbleStroke,{Color=T.AccentSoft, Thickness=1.8}, .8)
+        task.delay(.85, function()
+            if not bubble.Visible then return end
+            tw(bubbleStroke,{Color=T.AccentGlow, Thickness=1.0}, .8)
+            task.delay(.85, pulseBubble)
+        end)
+    end
+
+    bubbleBtn.MouseButton1Click:Connect(function()
         minimized=false
         bubble.Visible=false
         win.Visible=true
@@ -411,11 +459,12 @@ function Nova:MakeWindow(opts)
         task.delay(.24, function()
             win.Visible=false
             bubble.Visible=true
-            -- little pop-in on bubble
+            -- sleek pop-in
             bubble.Size=UDim2.new(0,0,0,0)
-            bubble.Position=UDim2.new(1,-18,0,8)
-            tw(bubble,{Size=UDim2.new(0,36,0,36), Position=UDim2.new(1,-46,0,8)},
-                .3, Enum.EasingStyle.Back)
+            bubble.Position=UDim2.new(1,-29,0,27)
+            tw(bubble,{Size=UDim2.new(0,38,0,38), Position=UDim2.new(1,-48,0,8)},
+                .32, Enum.EasingStyle.Back)
+            pulseBubble()
         end)
     end)
 
@@ -439,24 +488,23 @@ function Nova:MakeWindow(opts)
         if not gp and i.KeyCode==toggleKey then win.Visible=not win.Visible end
     end))
 
-    -- ── SIDEBAR ───────────────────────────────────
-    -- No bottom player-name footer — sidebar goes full height under topbar
+    -- ── SIDEBAR  (Workly-style: slightly lighter than BG, padded) ────
     local tabBar = new("Frame",{
         Size=UDim2.new(0,TAB_W,1,-TOP_H), Position=UDim2.new(0,0,0,TOP_H),
-        BackgroundColor3=T.TabBar, BorderSizePixel=0,
+        BackgroundColor3=Color3.fromRGB(13,11,22), BorderSizePixel=0,
     }, win)
-    listLayout(tabBar, Enum.FillDirection.Vertical, 2)
-    pad(tabBar,6,6,5,5)
+    listLayout(tabBar, Enum.FillDirection.Vertical, 1)
+    pad(tabBar,10,10,8,8)
 
-    -- separator
+    -- thin separator line
     new("Frame",{
         Size=UDim2.new(0,1,1,-TOP_H), Position=UDim2.new(0,TAB_W,0,TOP_H),
-        BackgroundColor3=T.Divider, BorderSizePixel=0,
+        BackgroundColor3=Color3.fromRGB(28,24,48), BorderSizePixel=0,
     }, win)
 
     local contentArea = new("Frame",{
         Size=UDim2.new(1,-(TAB_W+1),1,-TOP_H), Position=UDim2.new(0,TAB_W+1,0,TOP_H),
-        BackgroundTransparency=1, ClipsDescendants=true,
+        BackgroundColor3=Color3.fromRGB(8,7,16), ClipsDescendants=true,
     }, win)
 
     -- entrance
@@ -471,11 +519,21 @@ function Nova:MakeWindow(opts)
     function Window:_select(name)
         for n,f in pairs(self._tabs) do f.Visible=(n==name) end
         for n,b in pairs(self._btns) do
-            if n==name then
-                tw(b,{BackgroundColor3=T.TabActive,BackgroundTransparency=0})
-                b.TextColor3=T.Text
+            local isActive = (n==name)
+            -- find the gradient frame inside the button
+            local grad = b:FindFirstChild("_grad")
+            local lbl  = b:FindFirstChildOfClass("TextLabel")
+            local bar  = b:FindFirstChild("_bar")
+            if isActive then
+                tw(b,{BackgroundTransparency=0, BackgroundColor3=Color3.fromRGB(30,20,65)})
+                if grad then grad.Visible=true end
+                if bar  then tw(bar,{BackgroundTransparency=0}) end
+                if lbl  then lbl.TextColor3=Color3.new(1,1,1) end
             else
-                tw(b,{BackgroundTransparency=1}); b.TextColor3=T.TextDim
+                tw(b,{BackgroundTransparency=1})
+                if grad then grad.Visible=false end
+                if bar  then tw(bar,{BackgroundTransparency=1}) end
+                if lbl  then lbl.TextColor3=Color3.fromRGB(130,118,170) end
             end
         end
         self._active=name
@@ -509,44 +567,66 @@ function Nova:MakeWindow(opts)
         local name = opts.Name or "Tab"
         local icon = opts.Icon or ""
 
+        -- ── Workly-style tab button ──────────────────
         local btn = new("TextButton",{
-            Size=UDim2.new(1,0,0,32), BackgroundTransparency=1,
-            BackgroundColor3=T.TabActive, Text="",
+            Size=UDim2.new(1,0,0,36), BackgroundTransparency=1,
+            BackgroundColor3=Color3.fromRGB(30,20,65), Text="",
             BorderSizePixel=0,
         }, tabBar)
-        corner(btn, T.RadBtn)
+        corner(btn, UDim.new(0,7))
 
-        local indicator = new("Frame",{
-            Size=UDim2.new(0,2,0.6,0), Position=UDim2.new(0,0,0.2,0),
-            BackgroundColor3=T.Accent, BorderSizePixel=0,
-            BackgroundTransparency=1, ZIndex=2,
+        -- Blue→purple gradient fill (shown only when active, like Workly)
+        local gradFill = new("Frame",{
+            Name="_grad",
+            Size=UDim2.new(1,0,1,0),
+            BackgroundColor3=Color3.fromRGB(60,40,160),
+            BorderSizePixel=0, Visible=false, ZIndex=0,
         }, btn)
-        corner(indicator, T.RadFull)
+        corner(gradFill, UDim.new(0,7))
+        local ug = Instance.new("UIGradient", gradFill)
+        ug.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(80,50,200)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(40,20,120)),
+        }
+        ug.Rotation = 90
 
+        -- Left accent bar (like Workly's left-edge highlight)
+        local bar = new("Frame",{
+            Name="_bar",
+            Size=UDim2.new(0,3,0.55,0),
+            Position=UDim2.new(0,-1,0.225,0),
+            BackgroundColor3=T.AccentSoft,
+            BorderSizePixel=0, BackgroundTransparency=1, ZIndex=3,
+        }, btn)
+        corner(bar, T.RadFull)
+
+        -- Icon (text emoji or rbxassetid image)
         if icon~="" and icon:find("rbxassetid") then
             new("ImageLabel",{
-                Size=UDim2.new(0,14,0,14), Position=UDim2.new(0,7,0.5,-7),
-                BackgroundTransparency=1, Image=icon
+                Size=UDim2.new(0,16,0,16), Position=UDim2.new(0,10,0.5,-8),
+                BackgroundTransparency=1, Image=icon, ZIndex=2,
             }, btn)
             new("TextLabel",{
-                Size=UDim2.new(1,-28,1,0), Position=UDim2.new(0,26,0,0),
+                Name="lbl",
+                Size=UDim2.new(1,-34,1,0), Position=UDim2.new(0,32,0,0),
                 BackgroundTransparency=1, Text=name,
-                TextColor3=T.TextDim, TextSize=12, Font=T.Font,
-                TextXAlignment=Enum.TextXAlignment.Left
+                TextColor3=Color3.fromRGB(130,118,170), TextSize=13, Font=T.Font,
+                TextXAlignment=Enum.TextXAlignment.Left, ZIndex=2,
             }, btn)
         else
             new("TextLabel",{
-                Size=UDim2.new(1,-12,1,0), Position=UDim2.new(0,10,0,0),
+                Name="lbl",
+                Size=UDim2.new(1,-14,1,0), Position=UDim2.new(0,12,0,0),
                 BackgroundTransparency=1,
-                Text=(icon~="" and icon.." " or "")..name,
-                TextColor3=T.TextDim, TextSize=12, Font=T.Font,
-                TextXAlignment=Enum.TextXAlignment.Left
+                Text=(icon~="" and icon.."  " or "")..name,
+                TextColor3=Color3.fromRGB(130,118,170), TextSize=13, Font=T.Font,
+                TextXAlignment=Enum.TextXAlignment.Left, ZIndex=2,
             }, btn)
         end
 
         btn.MouseEnter:Connect(function()
             if self._active~=name then
-                tw(btn,{BackgroundTransparency=0,BackgroundColor3=T.TabHover})
+                tw(btn,{BackgroundTransparency=0, BackgroundColor3=Color3.fromRGB(20,16,40)})
             end
         end)
         btn.MouseLeave:Connect(function()
@@ -567,14 +647,9 @@ function Nova:MakeWindow(opts)
         self._tabs[name]=scroll; self._btns[name]=btn
         btn.MouseButton1Click:Connect(function()
             self:_select(name)
-            for n,b in pairs(self._btns) do
-                local ind = b:FindFirstChildOfClass("Frame")
-                if ind then tw(ind,{BackgroundTransparency = n==name and 0 or 1}) end
-            end
         end)
         if not self._active then
             self:_select(name)
-            if indicator then tw(indicator,{BackgroundTransparency=0}) end
         end
 
         -- ════════════════════════════════════════
@@ -586,11 +661,11 @@ function Nova:MakeWindow(opts)
 
         local function baseElem(h, col)
             local f = new("Frame",{
-                Size=UDim2.new(1,0,0,h or 38),
-                BackgroundColor3=col or T.BG2,
+                Size=UDim2.new(1,0,0,h or 40),
+                BackgroundColor3=col or Color3.fromRGB(17,14,30),
                 BorderSizePixel=0,
             }, target())
-            corner(f, T.RadElem)
+            corner(f, UDim.new(0,8))
             return f
         end
 
@@ -606,23 +681,17 @@ function Nova:MakeWindow(opts)
         -- ── SECTION ─────────────────────────────
         function Tab:AddSection(opts)
             local name = type(opts)=="string" and opts or (opts and opts.Name or "Section")
+            -- Workly style: bare caps label, no background box
             local hdr = new("Frame",{
-                Size=UDim2.new(1,0,0,22),
-                BackgroundColor3=T.Section, BorderSizePixel=0,
+                Size=UDim2.new(1,0,0,26),
+                BackgroundTransparency=1, BorderSizePixel=0,
             }, target())
-            corner(hdr, T.RadElem)
-
-            local sbar = new("Frame",{
-                Size=UDim2.new(0,2,0.65,0), Position=UDim2.new(0,0,0.175,0),
-                BackgroundColor3=T.Accent, BorderSizePixel=0,
-            }, hdr)
-            corner(sbar, T.RadFull)
 
             new("TextLabel",{
-                Size=UDim2.new(1,-16,1,0), Position=UDim2.new(0,10,0,0),
+                Size=UDim2.new(1,0,1,0), Position=UDim2.new(0,6,0,0),
                 BackgroundTransparency=1,
                 Text=name:upper(),
-                TextColor3=T.TextDim, TextSize=9, Font=T.FontBold,
+                TextColor3=Color3.fromRGB(80,70,115), TextSize=9, Font=T.FontBold,
                 TextXAlignment=Enum.TextXAlignment.Left,
             }, hdr)
 
