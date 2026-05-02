@@ -243,18 +243,12 @@ function Nova:MakeWindow(opts)
     self._gui=gui
     ensureHolder(gui)
 
-    -- ── SHADOW: matches win AnchorPoint; slight Y offset gives depth ──
-    local shadow=new("ImageLabel",{
-        Size=UDim2.new(0.82,80,0.80,80),
-        Position=UDim2.new(0.5,0,0.5,8),
-        AnchorPoint=Vector2.new(0.5,0.5),
+    -- ── SHADOW: disabled — rendered outside window border ──
+    local shadow = new("Frame",{
+        Size=UDim2.new(0,0,0,0),
         BackgroundTransparency=1,
-        Image="rbxassetid://5028857084",
-        ImageColor3=Color3.fromRGB(4,3,12),
-        ImageTransparency=0.38,
-        ScaleType=Enum.ScaleType.Slice,
-        SliceCenter=Rect.new(24,24,276,276),
-        ZIndex=0},gui)
+        BorderSizePixel=0,
+        Visible=false},gui)  -- invisible placeholder so shadow references still work
 
     local win=new("Frame",{
         Size=UDim2.new(0.82,0,0.80,0),
@@ -468,35 +462,26 @@ function Nova:MakeWindow(opts)
     local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
 
     -- ── Avatar circle ──────────────────────────────────────────────────────────
-    -- Roblox: UICorner + ClipsDescendants clips children into a circle.
-    -- UIStroke on a clipping frame gets clipped itself, so we layer:
-    --   pcAvClip  → ClipsDescendants=true, fully transparent bg, UICorner=full → clips image
-    --   pcAv      → ImageLabel filling pcAvClip, BackgroundTransparency=1
-    --   pcAvRing  → sibling Frame, same size, NO clipping, UICorner=full, UIStroke only → visible ring
+    -- Roblox ONLY clips children when the parent frame has a visible (non-fully-transparent)
+    -- background. So pcAvClip uses BackgroundTransparency=0 with the sidebar colour.
+    -- The UIStroke ring is parented to pcRow (not the clipping frame) so it is never clipped.
 
-    local AV_SIZE = 34  -- avatar diameter in px
+    local AV_SIZE = 36  -- avatar diameter in px
 
-    -- Outer wrapper (transparent, no clipping) — holds clip + ring as siblings
-    local pcAvBg = Instance.new("Frame")
-    pcAvBg.Size                  = UDim2.new(0, AV_SIZE, 0, AV_SIZE)
-    pcAvBg.Position              = UDim2.new(0, 0, 0.5, -AV_SIZE/2)
-    pcAvBg.BackgroundTransparency= 1
-    pcAvBg.BorderSizePixel       = 0
-    pcAvBg.ZIndex                = 2
-    pcAvBg.Parent                = pcRow
-
-    -- Clipping circle — FULLY transparent bg so NO square bleed, UICorner rounds it
-    local pcAvClip = Instance.new("Frame")
-    pcAvClip.Size                = UDim2.new(1, 0, 1, 0)
-    pcAvClip.BackgroundTransparency = 1        -- must be 1 — any opaque bg leaks square corners
+    -- Clipping circle — opaque sidebar bg so Roblox actually clips children to the circle
+    local pcAvClip               = Instance.new("Frame")
+    pcAvClip.Size                = UDim2.new(0, AV_SIZE, 0, AV_SIZE)
+    pcAvClip.Position            = UDim2.new(0, 0, 0.5, -AV_SIZE/2)
+    pcAvClip.BackgroundColor3    = T.Sidebar   -- matches card bg → no colour bleed
+    pcAvClip.BackgroundTransparency = 0        -- MUST be opaque for ClipsDescendants to work
     pcAvClip.BorderSizePixel     = 0
-    pcAvClip.ClipsDescendants    = true        -- this is what makes the circle crop
+    pcAvClip.ClipsDescendants    = true
     pcAvClip.ZIndex              = 3
-    pcAvClip.Parent              = pcAvBg
+    pcAvClip.Parent              = pcRow
     local _avClipC               = Instance.new("UICorner", pcAvClip)
-    _avClipC.CornerRadius        = UDim.new(1, 0)   -- full circle
+    _avClipC.CornerRadius        = UDim.new(1, 0)
 
-    -- Avatar image — fills the clip, transparent bg
+    -- Avatar image fills the clip frame exactly
     local pcAv                   = Instance.new("ImageLabel")
     pcAv.Size                    = UDim2.new(1, 0, 1, 0)
     pcAv.BackgroundTransparency  = 1
@@ -507,13 +492,15 @@ function Nova:MakeWindow(opts)
     pcAv.ZIndex                  = 4
     pcAv.Parent                  = pcAvClip
 
-    -- Ring overlay — sibling of pcAvClip, NO ClipsDescendants so stroke renders fully
+    -- Ring overlay — parented to pcRow (NOT pcAvClip) so UIStroke is never clipped
+    -- Positioned and sized identically to pcAvClip
     local pcAvRing               = Instance.new("Frame")
-    pcAvRing.Size                = UDim2.new(1, 0, 1, 0)
-    pcAvRing.BackgroundTransparency = 1
+    pcAvRing.Size                = UDim2.new(0, AV_SIZE, 0, AV_SIZE)
+    pcAvRing.Position            = UDim2.new(0, 0, 0.5, -AV_SIZE/2)
+    pcAvRing.BackgroundTransparency = 1        -- fully transparent — stroke only
     pcAvRing.BorderSizePixel     = 0
-    pcAvRing.ZIndex              = 5           -- on top of image
-    pcAvRing.Parent              = pcAvBg
+    pcAvRing.ZIndex              = 6           -- above image
+    pcAvRing.Parent              = pcRow       -- sibling of pcAvClip, not child
     local _avRingC               = Instance.new("UICorner", pcAvRing)
     _avRingC.CornerRadius        = UDim.new(1, 0)
     local _avRingS               = Instance.new("UIStroke", pcAvRing)
