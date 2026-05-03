@@ -437,8 +437,7 @@ function Nova:MakeWindow(opts)
         Position=UDim2.new(0,0,0,TOP_H),
         BackgroundColor3=T.Sidebar,BorderSizePixel=0,
         ScrollBarThickness=2,ScrollBarImageColor3=T.Accent,
-        CanvasSize=UDim2.new(0,0,0,0),
-        AutomaticCanvasSize=Enum.AutomaticSize.Y,
+                AutomaticCanvasSize=Enum.AutomaticSize.Y,
         ScrollingDirection=Enum.ScrollingDirection.Y,
         ElasticBehavior=Enum.ElasticBehavior.Never},win)
     vlist(tabBar,2)
@@ -501,7 +500,11 @@ function Nova:MakeWindow(opts)
     _avOC.CornerRadius = UDim.new(1,0)
 
     local avImg = new("ImageLabel",{
-        Size             = UDim2.new(1,0,1,0),
+        Size             = UDim2.new(1,0,1,0)
+local _corner = Instance.new("UICorner")
+_corner.CornerRadius = UDim.new(1,0)
+_corner.Parent = avImg
+,
         BackgroundColor3 = Color3.fromRGB(0,0,0),
         BackgroundTransparency = 0,
         Image            = "rbxthumb://type=AvatarHeadShot&id="
@@ -701,8 +704,7 @@ function Nova:MakeWindow(opts)
         local scroll=new("ScrollingFrame",{Size=UDim2.new(1,0,1,0),
             BackgroundTransparency=1,BorderSizePixel=0,
             ScrollBarThickness=2,ScrollBarImageColor3=T.Accent,
-            CanvasSize=UDim2.new(0,0,0,0),
-            AutomaticCanvasSize=Enum.AutomaticSize.Y,
+                        AutomaticCanvasSize=Enum.AutomaticSize.Y,
             ClipsDescendants=true,
             Visible=false},contentArea)
         vlist(scroll,5)
