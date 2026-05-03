@@ -437,7 +437,8 @@ function Nova:MakeWindow(opts)
         Position=UDim2.new(0,0,0,TOP_H),
         BackgroundColor3=T.Sidebar,BorderSizePixel=0,
         ScrollBarThickness=2,ScrollBarImageColor3=T.Accent,
-                AutomaticCanvasSize=Enum.AutomaticSize.Y,
+        CanvasSize=UDim2.new(0,0,0,0),
+        AutomaticCanvasSize=Enum.AutomaticSize.Y,
         ScrollingDirection=Enum.ScrollingDirection.Y,
         ElasticBehavior=Enum.ElasticBehavior.Never},win)
     vlist(tabBar,2)
@@ -500,7 +501,11 @@ function Nova:MakeWindow(opts)
     _avOC.CornerRadius = UDim.new(1,0)
 
     local avImg = new("ImageLabel",{
-        Size             = UDim2.new(1,0,1,0),
+        Size             = UDim2.new(1,0,1,0)
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1,0)
+corner.Parent = avImg
+,
         BackgroundColor3 = Color3.fromRGB(0,0,0),
         BackgroundTransparency = 0,
         Image            = "rbxthumb://type=AvatarHeadShot&id="
@@ -700,18 +705,10 @@ function Nova:MakeWindow(opts)
         local scroll=new("ScrollingFrame",{Size=UDim2.new(1,0,1,0),
             BackgroundTransparency=1,BorderSizePixel=0,
             ScrollBarThickness=2,ScrollBarImageColor3=T.Accent,
-                        AutomaticCanvasSize=Enum.AutomaticSize.Y,
+            CanvasSize=UDim2.new(0,0,0,0),
+            AutomaticCanvasSize=Enum.AutomaticSize.Y,
             ClipsDescendants=true,
             Visible=false},contentArea)
-
-local layout = Instance.new("UIListLayout")
-layout.Parent = scroll
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y)
-end)
-
         vlist(scroll,5)
         pad(scroll,8,14,8,8)  -- extra bottom pad keeps content above rounded corner
 
@@ -1031,15 +1028,6 @@ end)
                 BackgroundColor3=Color3.fromRGB(14,11,26),
                 BorderSizePixel=0,ClipsDescendants=true,
                 ZIndex=30,Visible=false},contentArea)
-
-local layout = Instance.new("UIListLayout")
-layout.Parent = scroll
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y)
-end)
-
             corner(list,T.R8)
             glassBorder(list,T.BorderHov,1.2)
             shimmerLine(list,0.7)
