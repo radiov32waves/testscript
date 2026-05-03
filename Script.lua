@@ -501,11 +501,7 @@ function Nova:MakeWindow(opts)
     _avOC.CornerRadius = UDim.new(1,0)
 
     local avImg = new("ImageLabel",{
-        Size             = UDim2.new(1,0,1,0)
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(1,0)
-corner.Parent = avImg
-,
+        Size             = UDim2.new(1,0,1,0),
         BackgroundColor3 = Color3.fromRGB(0,0,0),
         BackgroundTransparency = 0,
         Image            = "rbxthumb://type=AvatarHeadShot&id="
