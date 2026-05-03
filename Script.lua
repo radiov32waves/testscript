@@ -703,6 +703,15 @@ function Nova:MakeWindow(opts)
                         AutomaticCanvasSize=Enum.AutomaticSize.Y,
             ClipsDescendants=true,
             Visible=false},contentArea)
+
+local layout = Instance.new("UIListLayout")
+layout.Parent = scroll
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y)
+end)
+
         vlist(scroll,5)
         pad(scroll,8,14,8,8)  -- extra bottom pad keeps content above rounded corner
 
@@ -1022,6 +1031,15 @@ function Nova:MakeWindow(opts)
                 BackgroundColor3=Color3.fromRGB(14,11,26),
                 BorderSizePixel=0,ClipsDescendants=true,
                 ZIndex=30,Visible=false},contentArea)
+
+local layout = Instance.new("UIListLayout")
+layout.Parent = scroll
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y)
+end)
+
             corner(list,T.R8)
             glassBorder(list,T.BorderHov,1.2)
             shimmerLine(list,0.7)
