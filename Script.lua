@@ -283,15 +283,22 @@ function Nova:MakeWindow(opts)
         corner(ring,T.RFull)
     end
 
-    new("TextLabel",{Size=UDim2.new(1,-150,1,0),Position=UDim2.new(0,30,0,0),
+    -- Title left-aligned
+    new("TextLabel",{Size=UDim2.new(0,200,1,0),Position=UDim2.new(0,30,0,0),
         BackgroundTransparency=1,Text=title,
         TextColor3=T.Text,TextSize=14,Font=T.FontBold,
         TextXAlignment=Enum.TextXAlignment.Left,ZIndex=3},topbar)
 
-    new("TextLabel",{Size=UDim2.new(0,80,1,0),Position=UDim2.new(1,-136,0,0),
-        BackgroundTransparency=1,Text="NovaLib2",
-        TextColor3=T.TextMuted,TextSize=9,Font=T.FontLight,
-        TextXAlignment=Enum.TextXAlignment.Right,ZIndex=3},topbar)
+    -- NovaLibV2 perfectly centered in topbar
+    new("TextLabel",{
+        Size=UDim2.new(0,120,0,20),
+        Position=UDim2.new(0.5,-60,0.5,-10),
+        BackgroundTransparency=1,
+        Text="NovaLibV2",
+        TextColor3=Color3.fromRGB(120,100,180),
+        TextSize=10,Font=T.FontBold,
+        TextXAlignment=Enum.TextXAlignment.Center,
+        ZIndex=4},topbar)
     -- ── TOPBAR CONTROL BUTTONS ────────────────────
     local function ctrlBtn(text,xOff,yOff,hCol,cb)
         local b=new("TextButton",{
@@ -445,10 +452,10 @@ function Nova:MakeWindow(opts)
     grad(sdiv,Color3.fromRGB(60,42,110),Color3.fromRGB(28,20,55),90)
 
     local contentArea=new("Frame",{
-        Size=UDim2.new(1,-(TAB_W+1),1,-TOP_H),
+        Size=UDim2.new(1,-(TAB_W+1),1,-(TOP_H+10)),
         Position=UDim2.new(0,TAB_W+1,0,TOP_H),
-        BackgroundColor3=T.Content,ClipsDescendants=true},win)
-    -- ── FIX: round bottom-right corner of content area ──
+        BackgroundColor3=T.Content,
+        ClipsDescendants=true},win)
     corner(contentArea,T.R10)
 
     -- ── PLAYER CARD ──────────────────────────────
@@ -458,8 +465,9 @@ function Nova:MakeWindow(opts)
     local pcCard=new("Frame",{
         Size=UDim2.new(0,TAB_W,0,CARD_H-1),
         Position=UDim2.new(0,0,1,-(CARD_H-1)),
-        BackgroundColor3=T.Sidebar,BorderSizePixel=0},win)
-    -- ── FIX: round bottom-left corner of player card ──
+        BackgroundColor3=T.Sidebar,BorderSizePixel=0,
+        ClipsDescendants=true},win)
+    -- round bottom-left corner of player card
     corner(pcCard,T.R10)
     pad(pcCard,9,9,10,8)
     vlist(pcCard,6)
@@ -473,43 +481,50 @@ function Nova:MakeWindow(opts)
     -- sibling on pcRow so it is never clipped by the parent frame.
     local AV = 38  -- diameter px
 
-    local avClip = new("Frame",{
-        Size        = UDim2.new(0,AV,0,AV),
-        Position    = UDim2.new(0,4,0.5,-AV/2),
-        BackgroundColor3 = T.Sidebar,
+    -- BLACK MASK APPROACH:
+    -- 1. avOuter: black circle frame, ClipsDescendants=true — hard clips image to circle
+    -- 2. avImg: image inside avOuter fills it completely
+    -- 3. avRing: separate sibling with UIStroke for the colored border ring
+    -- The black background of avOuter = any square corner that leaks is black, matching
+    -- the dark sidebar, so it's invisible. ClipsDescendants + UICorner does the circle crop.
+
+    local avOuter = new("Frame",{
+        Size             = UDim2.new(0,AV,0,AV),
+        Position         = UDim2.new(0,4,0.5,-AV/2),
+        BackgroundColor3 = Color3.fromRGB(0,0,0),   -- black fallback = invisible on dark bg
         BackgroundTransparency = 0,
-        BorderSizePixel = 0,
+        BorderSizePixel  = 0,
         ClipsDescendants = true,
-        ZIndex = 3,
+        ZIndex           = 3,
     }, pcRow)
-    local _avCC = Instance.new("UICorner", avClip)
-    _avCC.CornerRadius = UDim.new(1,0)
+    local _avOC = Instance.new("UICorner", avOuter)
+    _avOC.CornerRadius = UDim.new(1,0)
 
     local avImg = new("ImageLabel",{
-        Size        = UDim2.new(1,0,1,0),
-        BackgroundColor3 = T.Sidebar,
+        Size             = UDim2.new(1,0,1,0),
+        BackgroundColor3 = Color3.fromRGB(0,0,0),
         BackgroundTransparency = 0,
-        Image       = "rbxthumb://type=AvatarHeadShot&id="
-                      ..tostring(LocalPlayer.UserId).."&w=48&h=48",
-        ScaleType   = Enum.ScaleType.Crop,
-        BorderSizePixel = 0,
-        ZIndex      = 4,
-    }, avClip)
+        Image            = "rbxthumb://type=AvatarHeadShot&id="
+                           ..tostring(LocalPlayer.UserId).."&w=48&h=48",
+        ScaleType        = Enum.ScaleType.Crop,
+        BorderSizePixel  = 0,
+        ZIndex           = 4,
+    }, avOuter)
 
-    -- Ring — sibling on pcRow, not inside avClip, so stroke is never clipped
+    -- Colored ring border — sibling on pcRow so UIStroke is NEVER clipped
     local avRing = new("Frame",{
-        Size        = UDim2.new(0,AV,0,AV),
-        Position    = UDim2.new(0,4,0.5,-AV/2),
+        Size             = UDim2.new(0,AV,0,AV),
+        Position         = UDim2.new(0,4,0.5,-AV/2),
         BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex      = 6,
+        BorderSizePixel  = 0,
+        ZIndex           = 6,
     }, pcRow)
     local _avRC = Instance.new("UICorner", avRing)
     _avRC.CornerRadius = UDim.new(1,0)
     local _avRS = Instance.new("UIStroke", avRing)
-    _avRS.Color          = isPremium and T.PremBorder or T.AccentSoft
-    _avRS.Thickness      = isPremium and 2.5 or 2
-    _avRS.ApplyStrokeMode= Enum.ApplyStrokeMode.Border
+    _avRS.Color           = isPremium and T.PremBorder or T.AccentSoft
+    _avRS.Thickness       = isPremium and 2.5 or 2
+    _avRS.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     if isPremium then
         new("TextLabel",{
@@ -688,9 +703,10 @@ function Nova:MakeWindow(opts)
             ScrollBarThickness=2,ScrollBarImageColor3=T.Accent,
             CanvasSize=UDim2.new(0,0,0,0),
             AutomaticCanvasSize=Enum.AutomaticSize.Y,
+            ClipsDescendants=true,
             Visible=false},contentArea)
         vlist(scroll,5)
-        pad(scroll,8,8,8,8)
+        pad(scroll,8,14,8,8)  -- extra bottom pad keeps content above rounded corner
 
         self._tabs[name]=scroll; self._btns[name]=btn
         btn.MouseButton1Click:Connect(function()
