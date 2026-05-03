@@ -257,7 +257,7 @@ function Nova:MakeWindow(opts)
         BackgroundColor3=T.Win,BorderSizePixel=0,
         ClipsDescendants=true},gui)
     corner(win,T.R10)
-    glassBorder(win,T.BorderWin,1.5)
+    -- no outer border stroke
 
     -- ── TOP BAR ──────────────────────────────────
     local topbar=new("Frame",{Size=UDim2.new(1,0,0,TOP_H),
@@ -288,11 +288,10 @@ function Nova:MakeWindow(opts)
         TextColor3=T.Text,TextSize=14,Font=T.FontBold,
         TextXAlignment=Enum.TextXAlignment.Left,ZIndex=3},topbar)
 
-    new("TextLabel",{Size=UDim2.new(0,70,1,0),Position=UDim2.new(1,-136,0,0),
-        BackgroundTransparency=1,Text=toggleKey.Name,
+    new("TextLabel",{Size=UDim2.new(0,80,1,0),Position=UDim2.new(1,-136,0,0),
+        BackgroundTransparency=1,Text="NovaLib2",
         TextColor3=T.TextMuted,TextSize=9,Font=T.FontLight,
         TextXAlignment=Enum.TextXAlignment.Right,ZIndex=3},topbar)
-
     -- ── TOPBAR CONTROL BUTTONS ────────────────────
     local function ctrlBtn(text,xOff,yOff,hCol,cb)
         local b=new("TextButton",{
@@ -412,11 +411,17 @@ function Nova:MakeWindow(opts)
         end
     end))
 
-    -- ── PREMIUM ID CHECK ─────────────────────────
+    -- ── PREMIUM CHECK ────────────────────────────
+    -- isPremium = true if the player's UserId is in PremiumIds table,
+    -- OR if opts.ForcePremium = true (for testing / all-premium scripts).
+    -- To make a specific player premium, add their UserId to PremiumIds:
+    --   Nova:MakeWindow({ PremiumIds = { 123456789 } })
     local PREMIUM_IDS = opts.PremiumIds or {}
-    local isPremium   = false
-    for _,id in ipairs(PREMIUM_IDS) do
-        if LocalPlayer.UserId == id then isPremium=true; break end
+    local isPremium   = opts.ForcePremium == true
+    if not isPremium then
+        for _,id in ipairs(PREMIUM_IDS) do
+            if LocalPlayer.UserId == id then isPremium=true; break end
+        end
     end
 
     -- ── SIDEBAR ──────────────────────────────────
@@ -459,74 +464,76 @@ function Nova:MakeWindow(opts)
     pad(pcCard,9,9,10,8)
     vlist(pcCard,6)
 
-    local pcRow=new("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1},pcCard)
+    local pcRow=new("Frame",{Size=UDim2.new(1,0,0,38),BackgroundTransparency=1},pcCard)
 
-    -- ── Avatar circle ──────────────────────────────────────────────────────────
-    -- Roblox ONLY clips children when the parent frame has a visible (non-fully-transparent)
-    -- background. So pcAvClip uses BackgroundTransparency=0 with the sidebar colour.
-    -- The UIStroke ring is parented to pcRow (not the clipping frame) so it is never clipped.
+    -- ── Avatar — definitive circle crop ─────────────────────────────────────
+    -- Strategy: one Frame with ClipsDescendants=true + UICorner(1,0) + opaque bg
+    -- matching sidebar. ImageLabel inside also has the same opaque bg so there
+    -- is zero white/square flash at any frame. The UIStroke ring is a ZIndex-6
+    -- sibling on pcRow so it is never clipped by the parent frame.
+    local AV = 38  -- diameter px
 
-    local AV_SIZE = 36  -- avatar diameter in px
+    local avClip = new("Frame",{
+        Size        = UDim2.new(0,AV,0,AV),
+        Position    = UDim2.new(0,4,0.5,-AV/2),
+        BackgroundColor3 = T.Sidebar,
+        BackgroundTransparency = 0,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 3,
+    }, pcRow)
+    local _avCC = Instance.new("UICorner", avClip)
+    _avCC.CornerRadius = UDim.new(1,0)
 
-    -- Clipping circle — opaque sidebar bg so Roblox actually clips children to the circle
-    local pcAvClip               = Instance.new("Frame")
-    pcAvClip.Size                = UDim2.new(0, AV_SIZE, 0, AV_SIZE)
-    pcAvClip.Position            = UDim2.new(0, 0, 0.5, -AV_SIZE/2)
-    pcAvClip.BackgroundColor3    = T.Sidebar   -- matches card bg → no colour bleed
-    pcAvClip.BackgroundTransparency = 0        -- MUST be opaque for ClipsDescendants to work
-    pcAvClip.BorderSizePixel     = 0
-    pcAvClip.ClipsDescendants    = true
-    pcAvClip.ZIndex              = 3
-    pcAvClip.Parent              = pcRow
-    local _avClipC               = Instance.new("UICorner", pcAvClip)
-    _avClipC.CornerRadius        = UDim.new(1, 0)
+    local avImg = new("ImageLabel",{
+        Size        = UDim2.new(1,0,1,0),
+        BackgroundColor3 = T.Sidebar,
+        BackgroundTransparency = 0,
+        Image       = "rbxthumb://type=AvatarHeadShot&id="
+                      ..tostring(LocalPlayer.UserId).."&w=48&h=48",
+        ScaleType   = Enum.ScaleType.Crop,
+        BorderSizePixel = 0,
+        ZIndex      = 4,
+    }, avClip)
 
-    -- Avatar image fills the clip frame exactly
-    local pcAv                   = Instance.new("ImageLabel")
-    pcAv.Size                    = UDim2.new(1, 0, 1, 0)
-    pcAv.BackgroundTransparency  = 1
-    pcAv.Image                   = "rbxthumb://type=AvatarHeadShot&id="
-                                   ..tostring(LocalPlayer.UserId).."&w=48&h=48"
-    pcAv.ScaleType               = Enum.ScaleType.Crop
-    pcAv.BorderSizePixel         = 0
-    pcAv.ZIndex                  = 4
-    pcAv.Parent                  = pcAvClip
-
-    -- Ring overlay — parented to pcRow (NOT pcAvClip) so UIStroke is never clipped
-    -- Positioned and sized identically to pcAvClip
-    local pcAvRing               = Instance.new("Frame")
-    pcAvRing.Size                = UDim2.new(0, AV_SIZE, 0, AV_SIZE)
-    pcAvRing.Position            = UDim2.new(0, 0, 0.5, -AV_SIZE/2)
-    pcAvRing.BackgroundTransparency = 1        -- fully transparent — stroke only
-    pcAvRing.BorderSizePixel     = 0
-    pcAvRing.ZIndex              = 6           -- above image
-    pcAvRing.Parent              = pcRow       -- sibling of pcAvClip, not child
-    local _avRingC               = Instance.new("UICorner", pcAvRing)
-    _avRingC.CornerRadius        = UDim.new(1, 0)
-    local _avRingS               = Instance.new("UIStroke", pcAvRing)
-    _avRingS.Color               = isPremium and T.PremBorder or T.AccentSoft
-    _avRingS.Thickness           = isPremium and 2.5 or 2
-    _avRingS.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
+    -- Ring — sibling on pcRow, not inside avClip, so stroke is never clipped
+    local avRing = new("Frame",{
+        Size        = UDim2.new(0,AV,0,AV),
+        Position    = UDim2.new(0,4,0.5,-AV/2),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex      = 6,
+    }, pcRow)
+    local _avRC = Instance.new("UICorner", avRing)
+    _avRC.CornerRadius = UDim.new(1,0)
+    local _avRS = Instance.new("UIStroke", avRing)
+    _avRS.Color          = isPremium and T.PremBorder or T.AccentSoft
+    _avRS.Thickness      = isPremium and 2.5 or 2
+    _avRS.ApplyStrokeMode= Enum.ApplyStrokeMode.Border
 
     if isPremium then
-        new("TextLabel",{Size=UDim2.new(0,14,0,14),
-            Position=UDim2.new(0,26,0,-4),
+        new("TextLabel",{
+            Size=UDim2.new(0,14,0,14),
+            Position=UDim2.new(0,AV-8,0,-4),
             BackgroundTransparency=1,Text="👑",TextSize=10,
-            Font=T.FontBold,ZIndex=5},pcRow)
+            Font=T.FontBold,ZIndex=7},pcRow)
     end
 
-    local pcNames=new("Frame",{Size=UDim2.new(1,-38,1,0),
-        Position=UDim2.new(0,36,0,0),BackgroundTransparency=1},pcRow)
-    vlist(pcNames,2)
-    pad(pcNames,4,0,0,0)
+    -- Names shifted right of avatar with comfortable gap
+    local pcNames=new("Frame",{
+        Size     = UDim2.new(1,-(AV+16),1,0),
+        Position = UDim2.new(0,AV+12,0,0),
+        BackgroundTransparency=1},pcRow)
+    vlist(pcNames,3)
+    pad(pcNames,5,0,0,0)
 
-    new("TextLabel",{Size=UDim2.new(1,0,0,15),BackgroundTransparency=1,
+    new("TextLabel",{Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,
         Text=LocalPlayer.DisplayName,
         TextColor3=isPremium and T.PremText or T.Text,
-        TextSize=12,Font=T.FontBold,
+        TextSize=13,Font=T.FontBold,
         TextXAlignment=Enum.TextXAlignment.Left,
         TextTruncate=Enum.TextTruncate.AtEnd},pcNames)
-    new("TextLabel",{Size=UDim2.new(1,0,0,11),BackgroundTransparency=1,
+    new("TextLabel",{Size=UDim2.new(1,0,0,12),BackgroundTransparency=1,
         Text="@"..LocalPlayer.Name,
         TextColor3=T.TextMuted,TextSize=10,Font=T.FontLight,
         TextXAlignment=Enum.TextXAlignment.Left,
