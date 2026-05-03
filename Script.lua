@@ -511,21 +511,7 @@ function Nova:MakeWindow(opts)
         ZIndex           = 4,
     }, avOuter)
 
-    -- Colored ring border — sibling on pcRow so UIStroke is NEVER clipped
-    local avRing = new("Frame",{
-        Size             = UDim2.new(0,AV,0,AV),
-        Position         = UDim2.new(0,4,0.5,-AV/2),
-        BackgroundTransparency = 1,
-        BorderSizePixel  = 0,
-        ZIndex           = 6,
-    }, pcRow)
-    local _avRC = Instance.new("UICorner", avRing)
-    _avRC.CornerRadius = UDim.new(1,0)
-    local _avRS = Instance.new("UIStroke", avRing)
-    _avRS.Color           = isPremium and T.PremBorder or T.AccentSoft
-    _avRS.Thickness       = isPremium and 2.5 or 2
-    _avRS.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
+    
     if isPremium then
         new("TextLabel",{
             Size=UDim2.new(0,14,0,14),
